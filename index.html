@@ -635,7 +635,7 @@ const IF="UserTimes,IrtiqaTimes,'Times New Roman',Times,serif";
 const CINK='#2b1d12',CBRN='#7c502c';
 function fitFont(x,text,maxW,size,weight){let z=size;x.font=weight+' '+z+'px '+IF;while(x.measureText(text).width>maxW&&z>10){z--;x.font=weight+' '+z+'px '+IF}}
 const loadImg=src=>new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=src});
-const textTool=x=>(t,px,py,o={})=>{t=String(t);x.fillStyle=o.color||CINK;x.textAlign=o.a||'center';const bd=(o.weight||400)>=600;fitFont(x,t,o.w||200,o.size||24,400);if(bd){const z=parseFloat(x.font.match(/(\d+(?:\.\d+)?)px/)[1]),d=Math.max(.6,z/50);[[-d,0],[d,0],[0,-d*.6],[0,d*.6]].forEach(([a,b])=>x.fillText(t,px+a,py+b))}x.fillText(t,px,py)};
+const textTool=x=>(t,px,py,o={})=>{t=String(t);x.fillStyle=o.color||CINK;x.textAlign=o.a||'center';const bd=(o.weight||400)>=600;fitFont(x,t,o.w||200,o.size||24,400);if(bd){const z=parseFloat(x.font.match(/(\d+(?:\.\d+)?)px/)[1]),d=Math.max(.6,z/50);[[-d,0],[d,0],[0,-d*.6],[0,d*.6]].forEach(([a,b])=>x.fillText(t,px+a,py+b))}x.fillText(t,px,py);if(o.stroke){x.strokeStyle=x.fillStyle;x.lineWidth=o.stroke;x.lineJoin='round';x.strokeText(t,px,py)}};
 function bgCtx(bg){const o=document.createElement('canvas');o.width=bg.width;o.height=bg.height;const q=o.getContext('2d');q.drawImage(bg,0,0);return q}
 function cellColor(q,x0,y0,w,h){
   const d=q.getImageData(Math.round(x0),Math.round(y0),Math.round(w),Math.round(h)).data,R=[],G=[],B=[];
@@ -643,10 +643,11 @@ function cellColor(q,x0,y0,w,h){
   const med=a=>{a.sort((p,r)=>p-r);return a[a.length>>1]};
   return R.length?`rgb(${med(R)},${med(G)},${med(B)})`:'#fbeee4';
 }
-function mkCanvas(bg,w,h){
-  const k=2,c=document.createElement('canvas');c.width=w*k;c.height=h*k;const x=c.getContext('2d');x.scale(k,k);
-  x.drawImage(bg,0,0,w,h);x.direction='rtl';x.textBaseline='middle';
-  const T=(t,px,py,o={})=>{t=String(t);x.fillStyle=o.color||CINK;x.textAlign=o.a||'center';const bd=(o.weight||400)>=600;fitFont(x,t,o.w||200,o.size||24,400);if(bd){const z=parseFloat(x.font.match(/(\d+(?:\.\d+)?)px/)[1]),d=Math.max(.6,z/50);[[-d,0],[d,0],[0,-d*.6],[0,d*.6]].forEach(([a,b])=>x.fillText(t,px+a,py+b))}x.fillText(t,px,py)};
+function mkCanvas(bg,w,h,keep,cut){
+  const k=2,c=document.createElement('canvas');c.width=w*k;c.height=(h-(cut||0))*k;const x=c.getContext('2d');x.scale(k,k);
+  if(cut){const f=bg.height/h;x.drawImage(bg,0,0,bg.width,keep*f,0,0,w,keep);x.drawImage(bg,0,(keep+cut)*f,bg.width,(h-keep-cut)*f,0,keep,w,h-keep-cut)}
+  else x.drawImage(bg,0,0,w,h);x.direction='rtl';x.textBaseline='middle';
+  const T=(t,px,py,o={})=>{t=String(t);x.fillStyle=o.color||CINK;x.textAlign=o.a||'center';const bd=(o.weight||400)>=600;fitFont(x,t,o.w||200,o.size||24,400);if(bd){const z=parseFloat(x.font.match(/(\d+(?:\.\d+)?)px/)[1]),d=Math.max(.6,z/50);[[-d,0],[d,0],[0,-d*.6],[0,d*.6]].forEach(([a,b])=>x.fillText(t,px+a,py+b))}x.fillText(t,px,py);if(o.stroke){x.strokeStyle=x.fillStyle;x.lineWidth=o.stroke;x.lineJoin='round';x.strokeText(t,px,py)}};
   return{c,x,T};
 }
 const toJpg=c=>new Promise(res=>c.toBlob(res,'image/jpeg',0.93));
@@ -671,12 +672,12 @@ const LAY={kids:{path:1086.5,hifz:996,hifzP:884,rev:767,revP:651,les:547.5,int:4
 const LWD={kids:{path:56,hifz:104,hifzP:86,rev:116,revP:86,les:92,int:92,exam:76,track:66,total:180},big:{path:70,hifz:106,hifzP:86,rev:118,revP:86,les:120,exam:98,track:98,total:180}};
 async function drawHalaqaSheet(bg,h,rows,weekNo,size,DR){
   size=size||'kids';const LY=LAY[size],LW=LWD[size];
-  const k=2,P=35.32,TOP=238,N=Math.max(rows.length,22),extra=(N-22)*P,H=Math.round(1132+extra);
+  const k=2,P=35.32,TOP=238,N=Math.max(rows.length,1),extra=(N-22)*P,H=Math.round(1132+extra);
   const c=document.createElement('canvas');c.width=1600*k;c.height=H*k;const x=c.getContext('2d');x.scale(k,k);
   x.direction='rtl';x.textBaseline='middle';const T=textTool(x);
   /* دمج: أعلى القالب + صفوف إضافية منسوخة + أسفل القالب (مجموع واحد وتذييل واحد) */
-  const T0=TOP+22*P;x.drawImage(bg,0,0,1600,T0,0,0,1600,T0);
-  let y0=T0,left=N-22;
+  const T0=TOP+22*P,m0=Math.min(N,22);x.drawImage(bg,0,0,1600,TOP+m0*P,0,0,1600,TOP+m0*P);
+  let y0=TOP+m0*P,left=N-22;
   while(left>0){const m=Math.min(22,left);x.drawImage(bg,0,TOP,1600,m*P,0,y0,1600,m*P);y0+=m*P;left-=m}
   x.drawImage(bg,0,T0,1600,1132-T0,0,y0,1600,1132-T0);
   const [my,mm]=S.mon.split('-').map(Number),last=new Date(my,mm,0).getDate(),p2=n=>String(n).padStart(2,'0');
@@ -691,8 +692,8 @@ async function drawHalaqaSheet(bg,h,rows,weekNo,size,DR){
     x.fillStyle=cellColor(src,1554,TOP+P*(i%22)+3,30,P-6);x.fillRect(1554,TOP+P*i+2.5,31,P-5);
     T(i+1,1569,yc,{w:30,size:SZ.num});
     const r=rows[i];if(!r)continue;const a=Object.fromEntries(Object.entries(adjA(r.a,size)).map(([k,v])=>[k,+(+v).toFixed(2)]));
-    T(r.s.name,1334,yc,{w:420,size:SZ.name});
-    T(gKey(r.s),LY.path,yc,{w:LW.path,size:SZ.path});
+    T(r.s.name,1334,yc,{w:420,size:SZ.name,stroke:0.8});
+    T(gKey(r.s),LY.path,yc,{w:LW.path,size:SZ.path,stroke:0.7});
     Object.keys(LY).forEach(f=>{if(f==='path')return;T(a[f],LY[f],yc,{w:LW[f],size:FS,color:f==='total'?CBRN:CINK})});
   }
   const ex=y0-T0,ty=1042+ex;
@@ -707,7 +708,7 @@ async function drawHalaqaSheet(bg,h,rows,weekNo,size,DR){
 
 /* صورة النتائج (صغار): مفروزة حسب المسار والمستوى ثم المضمار والمجموع، 25 طالبًا في الصورة */
 async function drawResultsSheet(bg,g,part,off,kind){
-  const {c,x,T}=mkCanvas(bg,1132,1600);
+  const nr=Math.max(1,Math.min(25,part.length)),{c,x,T}=mkCanvas(bg,1132,1600,249+nr*51.28,(25-nr)*51.28);
   const big=kind==='big',p2=n=>String(n).padStart(2,'0');
   T(pObj(g.path).name,892,166,{a:'right',w:285,size:36,color:CBRN});
   T(lObj(g.level).name,392,166,{a:'right',w:330,size:36,color:CBRN});
@@ -715,11 +716,11 @@ async function drawResultsSheet(bg,g,part,off,kind){
   const COL=big?{rank:52,total:132,track:220,exam:300,les:395,rev:511,hifz:643}:{rank:51.5,total:122,track:201.5,exam:269,int:343.5,les:422.5,rev:527.5,hifz:651};
   const W=big?{rank:46,total:100,track:60,exam:84,les:88,rev:124,hifz:116}:{rank:46,total:84,track:62,exam:60,int:68,les:76,rev:124,hifz:100};
   const src=bgCtx(bg),P=51.28,TOP=249;
-  for(let i=0;i<25;i++){const y=TOP+P*(i+0.5)+3;
+  for(let i=0;i<nr;i++){const y=TOP+P*(i+0.5)+3;
     x.fillStyle=cellColor(src,1080,TOP+P*i+4,21,P-8);x.fillRect(1079.5,TOP+P*i+2.5,22,P-5);
     T(p2(off+i+1),1090.5,y,{w:22,size:20,color:CBRN});
     const r=part[i];if(!r)continue;const a=Object.fromEntries(Object.entries(r.a).map(([k,v])=>[k,+(+v).toFixed(2)]));
-    T(r.s.name,892,y,{w:350,size:30});
+    T(r.s.name,892,y,{w:350,size:30,stroke:0.8});
     Object.keys(COL).forEach(k=>{if(k==='rank')T(off+i+1,COL.rank,y,{w:W.rank,size:30,color:CBRN});else T(a[k],COL[k],y,{w:W[k],size:30,color:k==='total'?CBRN:CINK})});
   }
   return toJpg(c);
