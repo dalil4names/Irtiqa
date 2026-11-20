@@ -167,6 +167,14 @@ textarea{width:100%;min-height:110px}
 .tile:nth-child(7) .ic{background:linear-gradient(145deg,#e1f3e7,#e2f1f5);color:#3a9a6a}
 .tile:nth-child(8) .ic{background:linear-gradient(145deg,#e3ecfb,#e4f0f8);color:#4a7fd4}
 .tile:nth-child(1) .ic{background:rgba(255,255,255,.22)}
+.tiles{gap:9px!important}
+.tiles .tile{padding:12px 4px 10px;gap:7px;border-radius:20px}
+.tiles .tile .ic{width:44px;height:44px;border-radius:15px}
+.tiles .tile .ic svg{width:24px;height:24px}
+.tiles .tile b{font-size:14px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;line-height:1.25}
+.vers{text-align:center;font-size:12.5px;color:var(--muted,#7a8699);margin:8px 0 6px;letter-spacing:.3px}
+.home-stats .stat{padding:10px 6px}
+.home-stats .stat b{font-size:22px}
 th,td,.btn,input,select,textarea,button{font-family:inherit}
 
 .seg{gap:4px;padding:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
@@ -217,7 +225,7 @@ const ico=(k,s=24)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="n
 
 function demo(){
   const h1={id:uid(),name:'بلال بن رباح',teacher:'الأستاذ أحمد (مثال)',supervisor:'الشيخ خالد (مثال)'},h2={id:uid(),name:'عمر بن الخطاب',teacher:'الأستاذ محمود (مثال)',supervisor:'الشيخ خالد (مثال)'};
-  const paths=[['أ','ابتدائي'],['ث','ثانوي'],['ج','جامعي'],['س','متوسط'],['ش','شموخ'],['ص','صفوف أولى'],['ع','معالي'],['ه','مهرة'],['و','سمو'],['ك','كبار']].map(([code,name])=>({code,name}));
+  const paths=[['أ','ابتدائي'],['ث','ثانوي'],['ج','جامعي'],['س','متوسط'],['ش','شموخ'],['ص','صفوف أولى'],['ع','معالي'],['ه','مهرة'],['و','سمو'],['ك','كبار'],['م','مبدعين']].map(([code,name])=>({code,name}));
   const levels=[{code:'ذ',name:'ذهبي'},{code:'ف',name:'فضي'},{code:'ب',name:'برونزي'}];
   const mk=(n,h,p,l)=>({id:uid(),name:n,halaqa:h.id,path:p,level:l});
   const students=[mk('أحمد محمد (مثال)',h1,'أ','ذ'),mk('خالد علي (مثال)',h1,'أ','ذ'),mk('يوسف سعيد (مثال)',h2,'أ','ذ'),
@@ -232,6 +240,7 @@ if(!S||!S.halaqat)S=demo();
 /* الأسابيع ثابتة: من الأول إلى الخامس */
 function fixWeeks(){
   if(S.paths&&!S.paths.some(p=>p.code==='ك'||p.name==='كبار'))S.paths.push({code:'ك',name:'كبار'});
+  if(S.paths&&!S.paths.some(p=>p.code==='م'||p.name==='مبدعين'))S.paths.push({code:'م',name:'مبدعين'});
   const old=S.weeks||[];
   S.weeks=[0,1,2,3,4].map(i=>({id:old[i]?old[i].id:'w'+(i+1),label:'الأسبوع '+(i+1)}));
   S.entries=S.entries||{};
@@ -291,10 +300,10 @@ const TABS=[['home','الرئيسية'],['halaqat','الحلقات'],['week','ا
 let ui={fh:'',fg:'',q:'',scope:'all',add:{h:'',p:'',l:''},confirm:null,hv:'',bulk:null,newMon:false};
 function go(tab){S.tab=tab;render();window.scrollTo(0,0)}
 function render(){
-  const cur=S.tab==='addh'?'halaqat':S.tab==='exp'?'home':S.tab;
+  const cur=S.tab==='addh'?'halaqat':(S.tab==='exp'||S.tab==='tot')?'home':S.tab;
   document.getElementById('tabs').innerHTML=TABS.map(([k,l])=>`<button role="tab" data-act="tab" data-k="${k}" aria-selected="${cur===k}">${l}</button>`).join('');
   const banner=S.demo?`<div class="banner"><span>هذه بيانات تجريبية لتجربة التطبيق. احذفها قبل أن تبدأ ببياناتك.</span><button class="btn sm del" data-act="cleardemo">حذف البيانات التجريبية</button></div>`:'';
-  const v={home:viewHome,halaqat:viewHalaqat,addh:viewAddH,week:viewWeek,results:viewResults,settings:viewSettings,exp:viewExport}[S.tab]||viewHome;
+  const v={home:viewHome,halaqat:viewHalaqat,addh:viewAddH,week:viewWeek,results:viewResults,settings:viewSettings,exp:viewExport,tot:viewTotals}[S.tab]||viewHome;
   document.getElementById('main').innerHTML=banner+v();
 }
 function filtered(){return cs().filter(s=>(!ui.fh||s.halaqa===ui.fh)&&(!ui.fg||gKey(s)===ui.fg)&&(!ui.q||s.name.includes(ui.q)))}
@@ -303,6 +312,7 @@ function filterBar(){
   return `<label>الحلقة<select data-f="fh"><option value="">كل الحلقات</option>${hOpts(ui.fh)}</select></label>
   <label>المسار والمستوى<select data-f="fg"><option value="">الكل</option>${gs.map(g=>`<option value="${g.key}"${ui.fg===g.key?' selected':''}>${esc(g.label)}</option>`).join('')}</select></label>`;
 }
+const APP_VER='43';
 function viewHome(){
   const filled=S.weeks.filter(w=>Object.keys(S.entries[ek(S.mon,w.id)]||{}).length).length;
   const T=(act,k,ic,label,main)=>`<button class="tile${main?' main':''}" data-act="${act}"${k?` data-${act==='exo'?'v':'k'}="${k}"`:''}><span class="ic">${ico(ic,26)}</span><b>${label}</b></button>`;
@@ -314,10 +324,11 @@ function viewHome(){
    ${T('tab','results','trophy','النتائج')}
    ${T('exo','hal','img','تصدير الصور')}
    ${T('export','','down','تصدير Excel')}
-   ${T('newmonhome','','cal','شهر جديد')}
+   ${T('tab','tot','trophy','مجموع الحلقات')}
    ${T('tab','settings','gear','الإعدادات')}
   </div>
-  <div class="stats"><div class="stat"><b>${S.halaqat.length}</b><span class="sub">حلقة</span></div><div class="stat"><b>${cs().length}</b><span class="sub">طالب</span></div><div class="stat"><b style="font-size:20px;padding:3px 0">${esc(mdisp(S.mon))}</b><span class="sub">الشهر · ${filled}/5 أسابيع</span></div></div>`;
+  <div class="vers">الإصدار ${APP_VER}</div>
+  <div class="stats home-stats"><div class="stat"><b>${S.halaqat.length}</b><span class="sub">حلقة</span></div><div class="stat"><b>${cs().length}</b><span class="sub">طالب</span></div><div class="stat"><b style="font-size:20px;padding:3px 0">${esc(mdisp(S.mon))}</b><span class="sub">الشهر · ${filled}/5 أسابيع</span></div></div>`;
 }
 function viewHalaqat(){
   if(ui.hv&&!S.halaqat.find(h=>h.id===ui.hv))ui.hv='';
@@ -486,6 +497,7 @@ document.addEventListener('click',async ev=>{
   if(a==='exs'){ui.ex.size=b.dataset.v;render();return}
   if(a==='exh'||a==='exq'){const key=a==='exh'?'hs':'ps',l=new Set(ui.ex[key]);l.has(b.dataset.id)?l.delete(b.dataset.id):l.add(b.dataset.id);ui.ex[key]=[...l];render();return}
   if(a==='exgo'){exportSelected();return}
+  if(a==='totimg'){exportTotals();return}
   if(a==='exporthal'){exportHalaqaImage(b.dataset.id);return}
   if(a==='mon'){S.mon=b.dataset.v;save();render();return}
   if(a==='openh'){ui.hv=b.dataset.id;ui.hadd=false;ui.edit=false;ui.bulk=null;render();window.scrollTo(0,0);return}
@@ -496,6 +508,7 @@ document.addEventListener('click',async ev=>{
   if(a==='addsth'){ui.hv=b.dataset.id;ui.hadd=true;ui.edit=false;ui.bulk=null;go('halaqat');return}
   if(a==='imptog'){ui.imp=!ui.imp;render();return}
   if(a==='wk'){S.cur=b.dataset.id;save();render();return}
+  if(a==='exq2'){S.imgq=+b.dataset.v;save();render();return}
   if(a==='scm'){const cur=new Set(ui.exsc&&ui.exsc.length?ui.exsc:[ui.scope||'all']);cur.has(b.dataset.v)?cur.delete(b.dataset.v):cur.add(b.dataset.v);if(!cur.size)cur.add(b.dataset.v);ui.exsc=[...cur];render();return}
   if(a==='sc'){ui.scope=b.dataset.v;render();return}
   if(a==='cleardemo'){S.demo=false;S.students=[];S.entries={};S.halaqat=[];fixWeeks();save();ui={...ui,fh:'',fg:'',hv:'',add:{h:'',p:'',l:''}};go('addh');toast('تم حذف البيانات التجريبية. أضف حلقتك الأولى.');return}
@@ -644,13 +657,15 @@ function cellColor(q,x0,y0,w,h){
   return R.length?`rgb(${med(R)},${med(G)},${med(B)})`:'#fbeee4';
 }
 function mkCanvas(bg,w,h,keep,cut){
-  const k=2,c=document.createElement('canvas');c.width=w*k;c.height=(h-(cut||0))*k;const x=c.getContext('2d');x.scale(k,k);
-  if(cut){const f=bg.height/h;x.drawImage(bg,0,0,bg.width,keep*f,0,0,w,keep);x.drawImage(bg,0,(keep+cut)*f,bg.width,(h-keep-cut)*f,0,keep,w,h-keep-cut)}
+  const k=imgK(w,h-(cut||0)),c=document.createElement('canvas');c.width=Math.round(w*k);c.height=Math.round((h-(cut||0))*k);const x=c.getContext('2d');x.scale(k,k);
+  if(cut<0){const f=bg.height/h,add=-cut,TP=249,PP=51.28;x.drawImage(bg,0,0,bg.width,keep*f,0,0,w,keep);x.drawImage(bg,0,TP*f,bg.width,add*f,0,keep,w,add);x.drawImage(bg,0,keep*f,bg.width,(h-keep)*f,0,keep+add,w,h-keep)}
+  else if(cut){const f=bg.height/h;x.drawImage(bg,0,0,bg.width,keep*f,0,0,w,keep);x.drawImage(bg,0,(keep+cut)*f,bg.width,(h-keep-cut)*f,0,keep,w,h-keep-cut)}
   else x.drawImage(bg,0,0,w,h);x.direction='rtl';x.textBaseline='middle';
   const T=(t,px,py,o={})=>{t=String(t);x.fillStyle=o.color||CINK;x.textAlign=o.a||'center';const bd=(o.weight||400)>=600;fitFont(x,t,o.w||200,o.size||24,400);if(bd){const z=parseFloat(x.font.match(/(\d+(?:\.\d+)?)px/)[1]),d=Math.max(.6,z/50);[[-d,0],[d,0],[0,-d*.6],[0,d*.6]].forEach(([a,b])=>x.fillText(t,px+a,py+b))}x.fillText(t,px,py);if(o.stroke){x.strokeStyle=x.fillStyle;x.lineWidth=o.stroke;x.lineJoin='round';x.strokeText(t,px,py)}};
   return{c,x,T};
 }
-const toJpg=c=>new Promise(res=>c.toBlob(res,'image/jpeg',0.93));
+const toJpg=c=>new Promise(res=>c.toBlob(res,'image/jpeg',0.97));
+const imgK=(w,h)=>Math.max(1,Math.min(S.imgq||3,Math.sqrt(16000000/(w*h))));
 const chunks=(arr,n)=>{const o=[];for(let i=0;i<arr.length;i+=n)o.push(arr.slice(i,i+n));return o.length?o:[[]]};
 const cleanName=n=>n.replace(/[\\/:*?"<>|]/g,'-');
 function weekInfo(sc0){const sc=sc0||ui.scope||'all';return{sc,ws:weeksIn(sc),weekNo:sc==='all'?'':String(S.weeks.findIndex(w=>w.id===sc.slice(2))+1),tag:sc==='all'?'تراكمي':'أسبوع '+(S.weeks.findIndex(w=>w.id===sc.slice(2))+1)}}
@@ -672,8 +687,8 @@ const LAY={kids:{path:1086.5,hifz:996,hifzP:884,rev:767,revP:651,les:547.5,int:4
 const LWD={kids:{path:56,hifz:104,hifzP:86,rev:116,revP:86,les:92,int:92,exam:76,track:66,total:180},big:{path:70,hifz:106,hifzP:86,rev:118,revP:86,les:120,exam:98,track:98,total:180}};
 async function drawHalaqaSheet(bg,h,rows,weekNo,size,DR){
   size=size||'kids';const LY=LAY[size],LW=LWD[size];
-  const k=2,P=35.32,TOP=238,N=Math.max(rows.length,1),extra=(N-22)*P,H=Math.round(1132+extra);
-  const c=document.createElement('canvas');c.width=1600*k;c.height=H*k;const x=c.getContext('2d');x.scale(k,k);
+  const P=35.32,TOP=238,N=Math.max(rows.length,1),extra=(N-22)*P,H=Math.round(1132+extra),k=imgK(1600,H);
+  const c=document.createElement('canvas');c.width=Math.round(1600*k);c.height=Math.round(H*k);const x=c.getContext('2d');x.scale(k,k);
   x.direction='rtl';x.textBaseline='middle';const T=textTool(x);
   /* دمج: أعلى القالب + صفوف إضافية منسوخة + أسفل القالب (مجموع واحد وتذييل واحد) */
   const T0=TOP+22*P,m0=Math.min(N,22);x.drawImage(bg,0,0,1600,TOP+m0*P,0,0,1600,TOP+m0*P);
@@ -683,8 +698,8 @@ async function drawHalaqaSheet(bg,h,rows,weekNo,size,DR){
   const [my,mm]=S.mon.split('-').map(Number),last=new Date(my,mm,0).getDate(),p2=n=>String(n).padStart(2,'0');
   const dt=d=>my+'/'+p2(mm)+'/'+p2(d);
   const srcb=bgCtx(bg);
-  if(weekNo)T(weekNo,440,153,{w:90,size:28,color:CBRN});else{x.fillStyle=cellColor(srcb,420,136,40,10);x.fillRect(372,137,260,34)}
-  DR=DR||{};x.direction='ltr';T(DR.from||dt(1),938,153,{w:140,size:24,color:CBRN});T(DR.to||dt(last),695,153,{w:140,size:24,color:CBRN});x.direction='rtl';
+  if(weekNo)T(weekNo,440,153,{w:90,size:28,color:CBRN});else{x.fillStyle=cellColor(srcb,420,136,40,10);x.fillRect(398,142,228,26)}
+  DR=DR||{};x.direction='ltr';T(DR.from||dt(1),938,157,{w:160,size:29,color:CBRN});T(DR.to||dt(last),695,157,{w:160,size:29,color:CBRN});x.direction='rtl';
   const src=bgCtx(bg);
   const FS=SZ.row;
   for(let i=0;i<N;i++){
@@ -700,15 +715,15 @@ async function drawHalaqaSheet(bg,h,rows,weekNo,size,DR){
   const sm=f=>+rows.reduce((t,r)=>t+(+adjA(r.a,size)[f]||0),0).toFixed(2);
   ['hifz','hifzP','rev','revP','les','int'].forEach(f=>{if(!LY[f])return;const v=sm(f);if(v)T(v,LY[f],ty,{w:LW[f]+10,size:SZ.sum,color:CBRN})});
   T(sm('total'),LY.total,ty,{w:200,size:SZ.tot,color:CBRN,weight:700});
-  T(h.name,1440,1086+ex,{a:'right',w:420,size:SZ.foot});
-  T(h.teacher||'',880,1086+ex,{a:'right',w:360,size:SZ.foot});
-  T(h.supervisor||'',370,1086+ex,{a:'right',w:330,size:SZ.foot});
+  T(h.name,1440,1089+ex,{a:'right',w:420,size:SZ.foot});
+  T(h.teacher||'',880,1089+ex,{a:'right',w:360,size:SZ.foot});
+  T(h.supervisor||'',370,1089+ex,{a:'right',w:330,size:SZ.foot});
   return toJpg(c);
 }
 
 /* صورة النتائج (صغار): مفروزة حسب المسار والمستوى ثم المضمار والمجموع، 25 طالبًا في الصورة */
 async function drawResultsSheet(bg,g,part,off,kind){
-  const nr=Math.max(1,Math.min(25,part.length)),{c,x,T}=mkCanvas(bg,1132,1600,249+nr*51.28,(25-nr)*51.28);
+  const nr=Math.max(1,Math.min(30,part.length)),{c,x,T}=nr>25?mkCanvas(bg,1132,1600,249+25*51.28,-(nr-25)*51.28):mkCanvas(bg,1132,1600,249+nr*51.28,(25-nr)*51.28);
   const big=kind==='big',p2=n=>String(n).padStart(2,'0');
   T(pObj(g.path).name,892,166,{a:'right',w:285,size:36,color:CBRN});
   T(lObj(g.level).name,392,166,{a:'right',w:330,size:36,color:CBRN});
@@ -717,7 +732,7 @@ async function drawResultsSheet(bg,g,part,off,kind){
   const W=big?{rank:46,total:100,track:60,exam:84,les:88,rev:124,hifz:116}:{rank:46,total:84,track:62,exam:60,int:68,les:76,rev:124,hifz:100};
   const src=bgCtx(bg),P=51.28,TOP=249;
   for(let i=0;i<nr;i++){const y=TOP+P*(i+0.5)+3;
-    x.fillStyle=cellColor(src,1080,TOP+P*i+4,21,P-8);x.fillRect(1079.5,TOP+P*i+2.5,22,P-5);
+    x.fillStyle=cellColor(src,1080,TOP+P*(i%25)+4,21,P-8);x.fillRect(1079.5,TOP+P*i+2.5,22,P-5);
     T(p2(off+i+1),1090.5,y,{w:22,size:20,color:CBRN});
     const r=part[i];if(!r)continue;const a=Object.fromEntries(Object.entries(r.a).map(([k,v])=>[k,+(+v).toFixed(2)]));
     T(r.s.name,892,y,{w:350,size:30,stroke:0.8});
@@ -819,7 +834,7 @@ function viewExport(){
   const btn=(act,v,on,l,d)=>`<button data-act="${act}" data-v="${v}" aria-pressed="${on}"><b>${l}</b><small>${d}</small></button>`;
   const chip=(act,id,on,label,n)=>`<button class="btn sm${on?' pri':''}" data-act="${act}" data-id="${esc(id)}">${on?'✓ ':''}${esc(label)}${n!=null?` <span style="opacity:.7">(${n})</span>`:''}</button>`;
   const sts=cs().filter(s=>H.has(s.halaqa)&&(E.type==='hal'||Pp.has(s.path)));
-  const cnt=E.type==='hal'?hs.filter(h=>H.has(h)).length*((ui.exsc&&ui.exsc.length)||1):groups(sts).reduce((t,g)=>t+Math.ceil(g.items.length/25),0);
+  const cnt=E.type==='hal'?hs.filter(h=>H.has(h)).length*((ui.exsc&&ui.exsc.length)||1):groups(sts).reduce((t,g)=>t+Math.ceil(g.items.length/30),0);
   const XS=ui.exsc&&ui.exsc.length?ui.exsc:[ui.scope||'all'];
   const seg=`<div class="seg" role="group">${S.weeks.map((x,i)=>`<button data-act="scm" data-v="w:${x.id}" aria-pressed="${XS.includes('w:'+x.id)}"><small>الأسبوع</small><b>${i+1}</b></button>`).join('')}<button data-act="scm" data-v="all" aria-pressed="${XS.includes('all')}"><small>تراكمي</small><b>الكل</b></button></div>`;
   return `<div class="bar" style="justify-content:space-between;align-items:center"><h2 class="t">تصدير صور</h2><button class="btn" data-act="tab" data-k="home">رجوع</button></div>
@@ -827,17 +842,19 @@ function viewExport(){
    <div class="seg wide" role="group">${btn('ext','hal',E.type==='hal','كشف علامات','بترتيب الطلاب في الحلقة')}${btn('ext','res',E.type==='res','نتائج الشهر','مفروزة حسب المسار والمستوى')}</div>
    <div class="seg wide" role="group">${btn('exs','kids',E.size==='kids','صغار','مع التفاعل (الإضافات)')}${btn('exs','big',E.size==='big','كبار','بدون التفاعل ولا يُحسب في المجموع')}</div>
    <div class="bar"><label>الشهر<select data-f="mon">${S.months.map(m=>`<option value="${m}"${m===S.mon?' selected':''}>${esc(mdisp(m))}</option>`).join('')}</select></label></div>
+   <div class="sub">جودة الصور (ثابتة داخل التطبيق ولا تتأثر بشاشة الجهاز)</div>
+   <div class="seg wide" role="group">${btn('exq2','3',(S.imgq||3)===3,'عالية HD','3× — أوضح (الافتراضي)')}${btn('exq2','2',S.imgq===2,'عادية','2× — ملفات أصغر')}</div>
    ${E.type==='hal'?`<div class="sub">الفترة — يمكن تحديد أكثر من فترة (صورة لكل فترة)</div>${seg}`:''}
    <div class="sub">الحلقات</div>
    <div class="row" style="flex-wrap:wrap;gap:6px">${hs.map(id=>chip('exh',id,H.has(id),hName(id),cs().filter(s=>s.halaqa===id).length)).join('')||'<span class="sub">لا توجد حلقات فيها طلاب</span>'}</div>
    ${E.type==='res'?`<div class="sub">المسارات</div><div class="row" style="flex-wrap:wrap;gap:6px">${ps.map(id=>chip('exq',id,Pp.has(id),pObj(id).name)).join('')}</div>`:''}
-   <div class="sub">${E.type==='hal'?'صورة مستقلة لكل حلقة':'صورة مستقلة لكل مسار ومستوى (25 طالباً في الصورة)'} — سيُنتج ${cnt} صورة</div>
+   <div class="sub">${E.type==='hal'?'صورة مستقلة لكل حلقة':'صورة مستقلة لكل مسار ومستوى (30 طالباً في الصورة)'} — سيُنتج ${cnt} صورة</div>
    <div class="row"><button class="btn pri" data-act="exgo"${cnt?'':' disabled'}>${ico('img',18)} تصدير الصور</button></div>
   </div></div>`;
 }
 function defDates(sc){
   const [my,mm]=S.mon.split('-').map(Number),last=new Date(my,mm,0).getDate(),p2=n=>String(n).padStart(2,'0'),f=d=>my+'/'+p2(mm)+'/'+p2(d);
-  if(sc==='all')return{from:f(1),to:f(last)};
+  if(sc==='all'||sc==='res')return{from:f(1),to:f(last)};
   const i=S.weeks.findIndex(w=>w.id===sc.slice(2));
   return{from:f(i*7+1),to:f(i>=4?last:Math.min(last,i*7+7))};
 }
@@ -845,7 +862,7 @@ function askDates(scs){
   return new Promise(res=>{
     ui.dr=ui.dr||{};const store=ui.dr[S.mon]=ui.dr[S.mon]||{};
     const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
-    const rows=scs.map((sc,i)=>{const d=store[sc]||defDates(sc);return `<div class="row" style="align-items:center;gap:6px;margin-top:8px"><b style="flex:0 0 74px">${esc(scopeLabel(sc)||'الكل')}</b><input dir="ltr" data-i="${i}" data-k="from" style="flex:1;min-width:0;text-align:center" value="${esc(d.from)}" aria-label="من"><span class="sub">إلى</span><input dir="ltr" data-i="${i}" data-k="to" style="flex:1;min-width:0;text-align:center" value="${esc(d.to)}" aria-label="إلى"></div>`}).join('');
+    const rows=scs.map((sc,i)=>{const d=store[sc]||defDates(sc);return `<div class="row" style="align-items:center;gap:6px;margin-top:8px"><b style="flex:0 0 74px">${esc(sc==='res'?'نتائج الشهر':(scopeLabel(sc)||'الكل'))}</b><input dir="ltr" data-i="${i}" data-k="from" style="flex:1;min-width:0;text-align:center" value="${esc(d.from)}" aria-label="من"><span class="sub">إلى</span><input dir="ltr" data-i="${i}" data-k="to" style="flex:1;min-width:0;text-align:center" value="${esc(d.to)}" aria-label="إلى"></div>`}).join('');
     o.innerHTML='<div class="card" style="max-width:440px;width:100%;direction:rtl;max-height:90vh;overflow:auto"><div class="pad"><h2>تاريخ كل فترة</h2><div class="sub">الفترة — من تاريخ — إلى تاريخ</div>'+rows+'<div class="row" style="margin-top:14px"><button class="btn pri" id="drok">تصدير</button><button class="btn" id="drno">إلغاء</button></div></div></div>';
     document.body.appendChild(o);
     const done=v=>{o.remove();res(v)};
@@ -853,24 +870,107 @@ function askDates(scs){
     o.querySelector('#drno').onclick=()=>done(null);
   });
 }
+function progShow(title,total){
+  progHide();const d=document.createElement('div');d.id='prog';
+  d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px';
+  d.innerHTML='<div class="card" style="max-width:380px;width:100%;direction:rtl"><div class="pad"><h2 id="progT"></h2><div style="height:14px;border-radius:99px;background:rgba(127,127,127,.25);overflow:hidden;margin:12px 0"><div id="progB" style="height:100%;width:0;background:linear-gradient(90deg,#e8833a,#c2531a);transition:width .25s"></div></div><div class="sub" id="progL"></div></div></div>';
+  document.body.appendChild(d);d.querySelector('#progT').textContent=title;progSet(0,total,'');
+}
+async function progSet(i,total,label){
+  const b=document.getElementById('progB'),l=document.getElementById('progL');if(!b)return;
+  b.style.width=(total?Math.round(i/total*100):0)+'%';l.textContent=(total?`${i} / ${total} — `:'')+(label||'');
+  await new Promise(r=>setTimeout(r,15));
+}
+function progHide(){const d=document.getElementById('prog');if(d)d.remove()}
 async function exportSelected(){
-  let DRM=null;
-  if(ui.ex&&ui.ex.type==='hal'){DRM=await askDates(ui.exsc&&ui.exsc.length?ui.exsc:[ui.scope||'all']);if(!DRM)return}
-  const E=ui.ex,H=new Set(E.hs),Pp=new Set(E.ps),mn=monthName(S.mon),td=today(),size=E.size;
-  await ensureFonts();toast('جارٍ تجهيز الصور…');const out=[];
+  const E=ui.ex;let DRM=null;
+  if(E){const scs0=E.type==='hal'?(ui.exsc&&ui.exsc.length?ui.exsc:[ui.scope||'all']):['res'];DRM=await askDates(scs0);if(!DRM)return}
+  const H=new Set(E.hs),Pp=new Set(E.ps),mn=monthName(S.mon),td=today(),size=E.size;
+  await ensureFonts();const out=[];
+  try{
   if(E.type==='hal'){
     const bg=await loadImg(size==='big'?BG_BIG:BG_DATA);if(!bg){toast('تعذّر تحميل خلفية الكشف');return}
-    const scs=(ui.exsc&&ui.exsc.length?ui.exsc:[ui.scope||'all']);
-    for(const sc of scs)for(const h of S.halaqat.filter(h=>H.has(h.id))){const o=await buildHalaqa(h.id,bg,size,sc,DRM&&DRM[sc]);if(o)out.push(o)}
-    if(!out.length){toast('لا يوجد طلاب في الحلقات المحددة');return}
+    const scs=(ui.exsc&&ui.exsc.length?ui.exsc:[ui.scope||'all']),hl=S.halaqat.filter(h=>H.has(h.id)),tot=scs.length*hl.length;
+    progShow('جارٍ تصدير الكشوف',tot);let n=0;
+    for(const sc of scs)for(const h of hl){await progSet(n,tot,h.name);const o=await buildHalaqa(h.id,bg,size,sc,DRM&&DRM[sc]);if(o)out.push(o);n++}
+    if(!out.length){progHide();toast('لا يوجد طلاب في الحلقات المحددة');return}
+    await progSet(tot,tot,'جارٍ الحفظ…');progHide();
     await saveOut(out,`كشف ${hNames([...H])} ${mn} ${td}.zip`);return;
   }
   const sts=cs().filter(s=>H.has(s.halaqa)&&Pp.has(s.path)),gs=groups(sts);if(!gs.length){toast('اختر حلقة ومساراً فيهما طلاب');return}
   const bg=await loadImg(size==='big'?RES_BG2:RES_BG);if(!bg){toast('تعذّر تحميل خلفية النتائج');return}
   const ws=weeksIn('all'),hn=hNames([...H].filter(id=>sts.some(s=>s.halaqa===id)));
-  for(const g of gs){const parts=chunks(rankedK(g.items,ws,size),25);
-    for(let b=0;b<parts.length;b++)out.push({name:cleanName(`نتائج ${hn} ${g.label} ${mn} ${td}${parts.length>1?' '+(b+1):''}.jpg`),blob:await drawResultsSheet(bg,g,parts[b],b*25,size)})}
+  const jobs=[];for(const g of gs){const parts=chunks(rankedK(g.items,ws,size),30);parts.forEach((p,b)=>jobs.push({g,p,b,np:parts.length}))}
+  progShow('جارٍ تصدير النتائج',jobs.length);let n=0;
+  for(const j of jobs){await progSet(n,jobs.length,j.g.label);
+    out.push({name:cleanName(`نتائج ${hn} ${j.g.label} ${mn} ${td}${j.np>1?' '+(j.b+1):''}.jpg`),blob:await drawResultsSheet(bg,j.g,j.p,j.b*30,size)});n++}
+  await progSet(n,jobs.length,'جارٍ الحفظ…');progHide();
   await saveOut(out,`نتائج ${hn} ${mn} ${td}.zip`);
+  }finally{progHide()}
+}
+
+/* ===== مجموع الحلقات ===== */
+const TOT_COL=['#fde0d0','#f4b183','#e3a7e0','#c6e0b4','#ffe699','#b4c7e7','#d9d9d9','#f8cbad','#bdd7ee','#e2f0d9'],TOT_GRAND='#b7e4ea';
+function totalsData(){
+  const ws=weeksIn('all'),groupsT=[];let G={hifz:0,rev:0,pts:0};
+  S.paths.forEach((p,pi)=>{
+    const big=p.code==='ك'||!!p.big,rows=[];
+    S.halaqat.forEach(h=>{
+      const st=cs().filter(s=>s.halaqa===h.id&&s.path===p.code);if(!st.length)return;
+      const r={h:h.name,hifz:0,rev:0,pts:0};
+      st.forEach(s=>{const a=adjA(agg(s.id,ws),big?'big':'kids');r.hifz+=num(a.hifz);r.rev+=num(a.rev);r.pts+=num(a.total)});
+      r.hifz=rnd(r.hifz);r.rev=rnd(r.rev);r.pts=rnd(r.pts);rows.push(r)});
+    if(!rows.length)return;rows.sort((a,b)=>b.pts-a.pts);
+    const sum=rows.reduce((t,r)=>({hifz:t.hifz+r.hifz,rev:t.rev+r.rev,pts:t.pts+r.pts}),{hifz:0,rev:0,pts:0});
+    sum.hifz=rnd(sum.hifz);sum.rev=rnd(sum.rev);sum.pts=rnd(sum.pts);
+    G.hifz+=sum.hifz;G.rev+=sum.rev;G.pts+=sum.pts;
+    groupsT.push({name:p.name,color:TOT_COL[pi%TOT_COL.length],rows,sum});
+  });
+  G.hifz=rnd(G.hifz);G.rev=rnd(G.rev);G.pts=rnd(G.pts);
+  return{groups:groupsT,grand:G};
+}
+function viewTotals(){
+  const D=totalsData();
+  const td='border:1px solid #222;padding:6px 3px;text-align:center;color:#111;font-weight:600;font-size:14px';
+  let h='';
+  D.groups.forEach(g=>{
+    const n=g.rows.length+(g.rows.length>1?1:0);
+    g.rows.forEach((r,i)=>{h+=`<tr style="background:${g.color}">${i===0?`<td rowspan="${n}" style="${td};writing-mode:${n>=3?'vertical-rl;transform:rotate(180deg)':'horizontal-tb'}">${esc(g.name)}</td>`:''}<td style="${td}">${esc(r.h)}</td><td style="${td}">${r.hifz}</td><td style="${td}">${r.rev}</td><td style="${td}">${r.pts}</td></tr>`});
+    if(g.rows.length>1)h+=`<tr style="background:${g.color}"><td style="${td}">المجموع</td><td style="${td}">${g.sum.hifz}</td><td style="${td}">${g.sum.rev}</td><td style="${td}">${g.sum.pts}</td></tr>`;
+  });
+  return `<div class="bar" style="justify-content:space-between;align-items:center"><h2 class="t">مجموع الحلقات</h2><button class="btn" data-act="tab" data-k="home">رجوع</button></div>
+  <div class="card"><div class="pad"><div class="bar"><label>الشهر<select data-f="mon">${S.months.map(m=>`<option value="${m}"${m===S.mon?' selected':''}>${esc(mdisp(m))}</option>`).join('')}</select></label>
+  <button class="btn pri" data-act="totimg"${D.groups.length?'':' disabled'}>${ico('img',18)} تصدير صورة</button></div>
+  ${D.groups.length?`<div class="scroll"><table style="border-collapse:collapse;width:100%;table-layout:fixed"><colgroup><col style="width:13%"><col style="width:33%"><col style="width:14%"><col style="width:19%"><col style="width:21%"></colgroup><thead><tr style="background:#fff">${['المسار','الحلقة','الحفظ','المراجعة','النقاط'].map(t=>`<th style="${td}">${t}</th>`).join('')}</tr></thead><tbody>${h}<tr style="background:${TOT_GRAND}"><td colspan="2" style="${td}">المجموع العام</td><td style="${td}">${D.grand.hifz}</td><td style="${td}">${D.grand.rev}</td><td style="${td}">${D.grand.pts}</td></tr></tbody></table></div>`:'<div class="empty">لا يوجد طلاب بعد</div>'}
+  <div class="sub">مجموع كل الأسابيع في ${esc(mdisp(S.mon))}. النقاط: حفظ×100 + مراجعة×30 + الدروس + التفاعل + اختبار×1000 (التفاعل لا يدخل في مسار كبار).</div></div></div>`;
+}
+async function drawTotals(D){
+  const W=830,RH=48,cw=[120,310,120,130,150];
+  const nrows=1+D.groups.reduce((t,g)=>t+g.rows.length+(g.rows.length>1?1:0),0)+1,H=RH*nrows+2,k=imgK(W,H)*(S.imgq===2?1:1.1);
+  const c=document.createElement('canvas');c.width=Math.round(W*k);c.height=Math.round(H*k);const x=c.getContext('2d');x.scale(k,k);
+  x.fillStyle='#fff';x.fillRect(0,0,W,H);x.direction='rtl';x.textBaseline='middle';const T=textTool(x);
+  const cx=[];let r0=W-1;cw.forEach(w=>{cx.push([r0-w,r0]);r0-=w});
+  const cell=(ci,y,h,fill,txt,o={})=>{const [l,r]=[cx[ci][0],cx[ci][1]];x.fillStyle=fill;x.fillRect(l,y,r-l,h);x.strokeStyle='#222';x.lineWidth=1.2;x.strokeRect(l+.5,y+.5,r-l-1,h-1);
+    if(txt!==''&&txt!=null)T(txt,(l+r)/2,y+h/2+2,{w:r-l-12,size:o.size||29,color:'#111',stroke:o.b===false?0:.7})};
+  let y=1;['المسار','الحلقة','الحفظ','المراجعة','النقاط'].forEach((t,i)=>cell(i,y,RH,'#fff',t));y+=RH;
+  D.groups.forEach(g=>{
+    const n=g.rows.length+(g.rows.length>1?1:0),top=y;
+    g.rows.forEach(r=>{cell(1,y,RH,g.color,r.h);cell(2,y,RH,g.color,r.hifz);cell(3,y,RH,g.color,r.rev);cell(4,y,RH,g.color,r.pts);y+=RH});
+    if(g.rows.length>1){cell(1,y,RH,g.color,'المجموع');cell(2,y,RH,g.color,g.sum.hifz);cell(3,y,RH,g.color,g.sum.rev);cell(4,y,RH,g.color,g.sum.pts);y+=RH}
+    const hh=n*RH;cell(0,top,hh,g.color,'');
+    const [l,r]=cx[0];
+    if(n>=3){x.save();x.translate((l+r)/2,top+hh/2+2);x.rotate(-Math.PI/2);T(g.name,0,0,{w:hh-16,size:34,color:'#111',stroke:.8});x.restore()}
+    else T(g.name,(l+r)/2,top+hh/2+2,{w:r-l-12,size:30,color:'#111',stroke:.8});
+  });
+  const l=cx[1][0],r=cx[0][1];x.fillStyle=TOT_GRAND;x.fillRect(l,y,r-l,RH);x.strokeStyle='#222';x.lineWidth=1.2;x.strokeRect(l+.5,y+.5,r-l-1,RH-1);
+  T('المجموع العام',(l+r)/2,y+RH/2+2,{w:r-l-12,size:30,color:'#111',stroke:.8});
+  cell(2,y,RH,TOT_GRAND,D.grand.hifz);cell(3,y,RH,TOT_GRAND,D.grand.rev);cell(4,y,RH,TOT_GRAND,D.grand.pts);
+  return toJpg(c);
+}
+async function exportTotals(){
+  const D=totalsData();if(!D.groups.length){toast('لا يوجد طلاب');return}
+  toast('جارٍ تجهيز الجدول…');await ensureFonts();
+  const blob=await drawTotals(D);await saveOut([{name:cleanName(`مجموع الحلقات ${monthName(S.mon)} ${today()}.jpg`),blob}],'');
 }
 async function buildHalaqa(hid,bg,size,sc0,dr){
   const h=S.halaqat.find(x=>x.id===hid);if(!h)return null;
