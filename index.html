@@ -313,7 +313,7 @@ function filterBar(){
   return `<label>الحلقة<select data-f="fh"><option value="">كل الحلقات</option>${hOpts(ui.fh)}</select></label>
   <label>المسار والمستوى<select data-f="fg"><option value="">الكل</option>${gs.map(g=>`<option value="${g.key}"${ui.fg===g.key?' selected':''}>${esc(g.label)}</option>`).join('')}</select></label>`;
 }
-const APP_VER='46';
+const APP_VER='48';
 function viewHome(){
   const filled=S.weeks.filter(w=>Object.keys(S.entries[ek(S.mon,w.id)]||{}).length).length;
   const T=(act,k,ic,label,main)=>`<button class="tile${main?' main':''}" data-act="${act}"${k?` data-${act==='exo'?'v':'k'}="${k}"`:''}><span class="ic">${ico(ic,26)}</span><b>${label}</b></button>`;
@@ -911,7 +911,7 @@ async function exportSelected(){
 }
 
 /* ===== مجموع الحلقات ===== */
-const TOT_COL=['#fbd3bd','#f5b783','#d9bfea','#bfe3c6','#f6e2a0','#b9d6f2','#f3c1cf','#b5e2de','#d8d3c4','#cfe3a8','#c9c6f0','#f0d6a6','#bfe0f0'],TOT_GRAND='#b3e0ea';
+const TOT_COL=['#fbd3bd','#f5b783','#d9bfea','#bfe3c6','#f6e2a0','#b9d6f2','#f3c1cf','#b5e2de','#d8d3c4','#cfe3a8','#c9c6f0','#f0d6a6','#bfe0f0'],TOT_GRAND='#b3e0ea',TOT_HEAD='#8fbfe8';
 function totalsData(){
   const ws=weeksIn('all'),groupsT=[];let G={hifz:0,rev:0,pts:0};
   S.paths.forEach((p,pi)=>{
@@ -943,18 +943,18 @@ function viewTotals(){
   return `<div class="bar" style="justify-content:space-between;align-items:center"><h2 class="t">مجموع الحلقات</h2><button class="btn" data-act="tab" data-k="home">رجوع</button></div>
   <div class="card"><div class="pad"><div class="bar"><label>الشهر<select data-f="mon">${S.months.map(m=>`<option value="${m}"${m===S.mon?' selected':''}>${esc(mdisp(m))}</option>`).join('')}</select></label>
   <button class="btn pri" data-act="totimg"${D.groups.length?'':' disabled'}>${ico('img',18)} تصدير صورة</button></div>
-  ${D.groups.length?`<div class="scroll"><table style="border-collapse:collapse;width:100%;table-layout:fixed"><colgroup><col style="width:13%"><col style="width:33%"><col style="width:14%"><col style="width:19%"><col style="width:21%"></colgroup><thead><tr style="background:#fff">${['المسار','الحلقة','الحفظ','المراجعة','النقاط'].map(t=>`<th style="${td}">${t}</th>`).join('')}</tr></thead><tbody>${h}<tr style="background:${TOT_GRAND}"><td colspan="2" style="${td}">المجموع العام</td><td style="${td}">${D.grand.hifz}</td><td style="${td}">${D.grand.rev}</td><td style="${td}">${D.grand.pts}</td></tr></tbody></table></div>`:'<div class="empty">لا يوجد طلاب بعد</div>'}
+  ${D.groups.length?`<div class="scroll"><table style="border-collapse:collapse;width:100%;table-layout:fixed"><colgroup><col style="width:13%"><col style="width:33%"><col style="width:14%"><col style="width:19%"><col style="width:21%"></colgroup><thead><tr style="background:#8fbfe8">${['المسار','الحلقة','الحفظ','المراجعة','النقاط'].map(t=>`<th style="${td}">${t}</th>`).join('')}</tr></thead><tbody>${h}<tr style="background:${TOT_GRAND}"><td colspan="2" style="${td}">المجموع العام</td><td style="${td}">${D.grand.hifz}</td><td style="${td}">${D.grand.rev}</td><td style="${td}">${D.grand.pts}</td></tr></tbody></table></div>`:'<div class="empty">لا يوجد طلاب بعد</div>'}
   <div class="sub">مجموع كل الأسابيع في ${esc(mdisp(S.mon))}. النقاط: حفظ×100 + مراجعة×30 + الدروس + التفاعل + اختبار×1000 (التفاعل لا يدخل في مسار كبار).</div></div></div>`;
 }
 async function drawTotals(D){
-  const W=830,RH=48,cw=[120,310,120,130,150];
+  const W=930,RH=60,cw=[130,350,130,150,170];
   const nrows=1+D.groups.reduce((t,g)=>t+g.rows.length+(g.rows.length>1?1:0),0)+1,H=RH*nrows+2,k=imgK(W,H)*(S.imgq===2?1:1.1);
   const c=document.createElement('canvas');c.width=Math.round(W*k);c.height=Math.round(H*k);const x=c.getContext('2d');x.scale(k,k);
   x.fillStyle='#fff';x.fillRect(0,0,W,H);x.direction='rtl';x.textBaseline='middle';const T=textTool(x);
   const cx=[];let r0=W-1;cw.forEach(w=>{cx.push([r0-w,r0]);r0-=w});
   const cell=(ci,y,h,fill,txt,o={})=>{const [l,r]=[cx[ci][0],cx[ci][1]];x.fillStyle=fill;x.fillRect(l,y,r-l,h);x.strokeStyle='#222';x.lineWidth=1.2;x.strokeRect(l+.5,y+.5,r-l-1,h-1);
-    if(txt!==''&&txt!=null)T(txt,(l+r)/2,y+h/2+2,{w:r-l-12,size:o.size||29,color:'#111',stroke:o.b===false?0:.7})};
-  let y=1;['المسار','الحلقة','الحفظ','المراجعة','النقاط'].forEach((t,i)=>cell(i,y,RH,'#fff',t));y+=RH;
+    if(txt!==''&&txt!=null)T(txt,(l+r)/2,y+h/2+2,{w:r-l-12,size:o.size||38,color:'#111',stroke:o.b===false?0:1.3})};
+  let y=1;['المسار','الحلقة','الحفظ','المراجعة','النقاط'].forEach((t,i)=>cell(i,y,RH,TOT_HEAD,t));y+=RH;
   D.groups.forEach(g=>{
     const n=g.rows.length+(g.rows.length>1?1:0),top=y;
     const rf=g.rows.length>1?'#fff':g.color;
@@ -962,11 +962,11 @@ async function drawTotals(D){
     if(g.rows.length>1){cell(1,y,RH,g.color,'المجموع');cell(2,y,RH,g.color,g.sum.hifz);cell(3,y,RH,g.color,g.sum.rev);cell(4,y,RH,g.color,g.sum.pts);y+=RH}
     const hh=n*RH;cell(0,top,hh,g.color,'');
     const [l,r]=cx[0];
-    if(n>=3){x.save();x.translate((l+r)/2,top+hh/2+2);x.rotate(-Math.PI/2);T(g.name,0,0,{w:hh-16,size:34,color:'#111',stroke:.8});x.restore()}
-    else T(g.name,(l+r)/2,top+hh/2+2,{w:r-l-12,size:30,color:'#111',stroke:.8});
+    if(n>=3){x.save();x.translate((l+r)/2,top+hh/2+2);x.rotate(-Math.PI/2);T(g.name,0,0,{w:hh-16,size:42,color:'#111',stroke:1.3});x.restore()}
+    else T(g.name,(l+r)/2,top+hh/2+2,{w:r-l-12,size:40,color:'#111',stroke:1.3});
   });
   const l=cx[1][0],r=cx[0][1];x.fillStyle=TOT_GRAND;x.fillRect(l,y,r-l,RH);x.strokeStyle='#222';x.lineWidth=1.2;x.strokeRect(l+.5,y+.5,r-l-1,RH-1);
-  T('المجموع العام',(l+r)/2,y+RH/2+2,{w:r-l-12,size:30,color:'#111',stroke:.8});
+  T('المجموع العام',(l+r)/2,y+RH/2+2,{w:r-l-12,size:40,color:'#111',stroke:1.3});
   cell(2,y,RH,TOT_GRAND,D.grand.hifz);cell(3,y,RH,TOT_GRAND,D.grand.rev);cell(4,y,RH,TOT_GRAND,D.grand.pts);
   return toJpg(c);
 }
