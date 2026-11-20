@@ -313,7 +313,7 @@ function filterBar(){
   return `<label>الحلقة<select data-f="fh"><option value="">كل الحلقات</option>${hOpts(ui.fh)}</select></label>
   <label>المسار والمستوى<select data-f="fg"><option value="">الكل</option>${gs.map(g=>`<option value="${g.key}"${ui.fg===g.key?' selected':''}>${esc(g.label)}</option>`).join('')}</select></label>`;
 }
-const APP_VER='45';
+const APP_VER='46';
 function viewHome(){
   const filled=S.weeks.filter(w=>Object.keys(S.entries[ek(S.mon,w.id)]||{}).length).length;
   const T=(act,k,ic,label,main)=>`<button class="tile${main?' main':''}" data-act="${act}"${k?` data-${act==='exo'?'v':'k'}="${k}"`:''}><span class="ic">${ico(ic,26)}</span><b>${label}</b></button>`;
@@ -911,7 +911,7 @@ async function exportSelected(){
 }
 
 /* ===== مجموع الحلقات ===== */
-const TOT_COL=['#fde0d0','#f4b183','#e3a7e0','#c6e0b4','#ffe699','#b4c7e7','#d9d9d9','#f8cbad','#bdd7ee','#e2f0d9'],TOT_GRAND='#b7e4ea';
+const TOT_COL=['#fbd3bd','#f5b783','#d9bfea','#bfe3c6','#f6e2a0','#b9d6f2','#f3c1cf','#b5e2de','#d8d3c4','#cfe3a8','#c9c6f0','#f0d6a6','#bfe0f0'],TOT_GRAND='#b3e0ea';
 function totalsData(){
   const ws=weeksIn('all'),groupsT=[];let G={hifz:0,rev:0,pts:0};
   S.paths.forEach((p,pi)=>{
@@ -936,7 +936,8 @@ function viewTotals(){
   let h='';
   D.groups.forEach(g=>{
     const n=g.rows.length+(g.rows.length>1?1:0);
-    g.rows.forEach((r,i)=>{h+=`<tr style="background:${g.color}">${i===0?`<td rowspan="${n}" style="${td};writing-mode:${n>=3?'vertical-rl;transform:rotate(180deg)':'horizontal-tb'}">${esc(g.name)}</td>`:''}<td style="${td}">${esc(r.h)}</td><td style="${td}">${r.hifz}</td><td style="${td}">${r.rev}</td><td style="${td}">${r.pts}</td></tr>`});
+    const rb=g.rows.length>1?'#fff':g.color;
+    g.rows.forEach((r,i)=>{h+=`<tr style="background:${rb}">${i===0?`<td rowspan="${n}" style="${td};background:${g.color};writing-mode:${n>=3?'vertical-rl;transform:rotate(180deg)':'horizontal-tb'}">${esc(g.name)}</td>`:''}<td style="${td}">${esc(r.h)}</td><td style="${td}">${r.hifz}</td><td style="${td}">${r.rev}</td><td style="${td}">${r.pts}</td></tr>`});
     if(g.rows.length>1)h+=`<tr style="background:${g.color}"><td style="${td}">المجموع</td><td style="${td}">${g.sum.hifz}</td><td style="${td}">${g.sum.rev}</td><td style="${td}">${g.sum.pts}</td></tr>`;
   });
   return `<div class="bar" style="justify-content:space-between;align-items:center"><h2 class="t">مجموع الحلقات</h2><button class="btn" data-act="tab" data-k="home">رجوع</button></div>
@@ -956,7 +957,8 @@ async function drawTotals(D){
   let y=1;['المسار','الحلقة','الحفظ','المراجعة','النقاط'].forEach((t,i)=>cell(i,y,RH,'#fff',t));y+=RH;
   D.groups.forEach(g=>{
     const n=g.rows.length+(g.rows.length>1?1:0),top=y;
-    g.rows.forEach(r=>{cell(1,y,RH,g.color,r.h);cell(2,y,RH,g.color,r.hifz);cell(3,y,RH,g.color,r.rev);cell(4,y,RH,g.color,r.pts);y+=RH});
+    const rf=g.rows.length>1?'#fff':g.color;
+    g.rows.forEach(r=>{cell(1,y,RH,rf,r.h);cell(2,y,RH,rf,r.hifz);cell(3,y,RH,rf,r.rev);cell(4,y,RH,rf,r.pts);y+=RH});
     if(g.rows.length>1){cell(1,y,RH,g.color,'المجموع');cell(2,y,RH,g.color,g.sum.hifz);cell(3,y,RH,g.color,g.sum.rev);cell(4,y,RH,g.color,g.sum.pts);y+=RH}
     const hh=n*RH;cell(0,top,hh,g.color,'');
     const [l,r]=cx[0];
