@@ -301,7 +301,7 @@ function monthBar(){
 const combos=()=>S.paths.flatMap(p=>p.nolevel?[{c:p.code,p:p.code,l:'',label:p.code+' – '+p.name}]:S.levels.map(l=>({c:p.code+'.'+l.code,p:p.code,l:l.code,label:p.code+'.'+l.code+' – '+p.name+' '+l.name})));
 const cOpts=sel=>combos().map(x=>`<option value="${esc(x.c)}"${x.c===sel?' selected':''}>${esc(x.label)}</option>`).join('');
 function weeksIn(scope){return scope==='all'?monthKeys():[ek(S.mon,scope.slice(2))]}
-function agg(sid,ws){const r=Object.fromEntries(FIELDS.map(([k])=>[k,0]));ws.forEach(w=>{const e=ent(w,sid);FIELDS.forEach(([k])=>r[k]+=num(e[k]))});FIELDS.forEach(([k])=>{r[k]=rnd(r[k])});r.hifzP=rnd(r.hifz*100);r.revP=rnd(r.rev*30);r.total=rnd(r.hifzP+r.revP+r.les+r.int+r.exam*1000);return r}
+function agg(sid,ws){const r=Object.fromEntries(FIELDS.map(([k])=>[k,0]));ws.forEach(w=>{const e=ent(w,sid);FIELDS.forEach(([k])=>{if(k==='track')r[k]=Math.max(r[k],num(e[k]));else r[k]+=num(e[k])})});FIELDS.forEach(([k])=>{r[k]=rnd(r[k])});r.hifzP=rnd(r.hifz*100);r.revP=rnd(r.rev*30);r.total=rnd(r.hifzP+r.revP+r.les+r.int+r.exam*1000);return r}
 function scopeOptions(sel){return S.weeks.map(w=>`<option value="w:${w.id}"${sel==='w:'+w.id?' selected':''}>${esc(w.label)}</option>`).join('')+`<option value="all"${sel==='all'?' selected':''}>كل الأسابيع (تراكمي)</option>`}
 function scopeLabel(sc){if(sc==='all')return'كل الأسابيع';const w=S.weeks.find(x=>x.id===sc.slice(2));return w?w.label:''}
 function ranked(items,ws){return items.map(s=>({s,a:agg(s.id,ws)})).sort((x,y)=>y.a.track-x.a.track||y.a.total-x.a.total||x.s.name.localeCompare(y.s.name,'ar'))}
@@ -323,7 +323,7 @@ function filterBar(){
   return `<label>الحلقة<select data-f="fh"><option value="">كل الحلقات</option>${hOpts(ui.fh)}</select></label>
   <label>المسار والمستوى<select data-f="fg"><option value="">الكل</option>${gs.map(g=>`<option value="${g.key}"${ui.fg===g.key?' selected':''}>${esc(g.label)}</option>`).join('')}</select></label>`;
 }
-const APP_VER='51';
+const APP_VER='52';
 function viewHome(){
   const filled=S.weeks.filter(w=>Object.keys(S.entries[ek(S.mon,w.id)]||{}).length).length;
   const T=(act,k,ic,label,main)=>`<button class="tile${main?' main':''}" data-act="${act}"${k?` data-${act==='exo'?'v':'k'}="${k}"`:''}><span class="ic">${ico(ic,26)}</span><b>${label}</b></button>`;
