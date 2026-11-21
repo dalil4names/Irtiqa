@@ -182,6 +182,24 @@ th,td,.btn,input,select,textarea,button{font-family:inherit}
 .seg button{flex:1 1 0;min-width:0;padding:8px 4px}
 .seg.wide{flex-wrap:wrap}.seg.wide button{flex:1 1 0;min-width:130px;padding:12px 8px}
 .seg.wide button small{font-size:12px}
+.xcard .pad{padding:16px 14px 18px}
+.xsec{font-size:13px;color:var(--muted);font-weight:700;margin:16px 2px 8px}
+.xsec:first-child{margin-top:2px}
+.xhint{font-size:11.5px;color:var(--muted);font-weight:500}
+.seg.cmp{flex-wrap:nowrap}
+.seg.cmp button{min-width:0;padding:10px 6px}
+.seg.cmp button b{font-size:15.5px}
+.seg.cmp button small{font-size:11px}
+.xcard .pad{display:block}
+.xcard .pad>*+*{margin-top:8px}
+.xcard .pad>.xsec{margin-top:14px}
+.xcard .pad>.xbar{margin-top:14px}
+.xbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;padding:11px 14px;border-radius:18px;background:var(--soft)}
+.xcnt{font-weight:800;font-size:17px}
+.xq{display:flex;flex-direction:column;align-items:flex-end;gap:4px}
+.seg.mini{display:inline-flex;width:auto;padding:3px;gap:2px;border-radius:12px;flex-wrap:nowrap;overflow:visible}
+.seg.mini button{flex:0 0 auto;min-width:0;padding:5px 14px;flex-direction:row;font-size:13px;font-weight:700;border-radius:10px}
+.xgo{width:100%;margin-top:12px;min-height:56px;font-size:17px;border-radius:18px}
 .monsel{min-height:46px;font-weight:600;border-radius:14px;background:var(--surface);border:1px solid var(--line)}
 .resbar{gap:6px;flex-wrap:nowrap}.resbar .btn{flex:1 1 auto;min-height:44px;padding:5px 10px;white-space:nowrap}.resbar .monsel{flex:0 0 112px;min-height:44px;padding:5px 8px}
 @media (max-width:420px){.resbar .btn svg{display:none}.resbar .btn{font-size:14px;padding:5px 6px}.resbar .monsel{flex-basis:122px;padding:5px 4px;font-size:14px}}
@@ -323,7 +341,7 @@ function filterBar(){
   return `<label>الحلقة<select data-f="fh"><option value="">كل الحلقات</option>${hOpts(ui.fh)}</select></label>
   <label>المسار والمستوى<select data-f="fg"><option value="">الكل</option>${gs.map(g=>`<option value="${g.key}"${ui.fg===g.key?' selected':''}>${esc(g.label)}</option>`).join('')}</select></label>`;
 }
-const APP_VER='52';
+const APP_VER='57';
 function viewHome(){
   const filled=S.weeks.filter(w=>Object.keys(S.entries[ek(S.mon,w.id)]||{}).length).length;
   const T=(act,k,ic,label,main)=>`<button class="tile${main?' main':''}" data-act="${act}"${k?` data-${act==='exo'?'v':'k'}="${k}"`:''}><span class="ic">${ico(ic,26)}</span><b>${label}</b></button>`;
@@ -735,12 +753,12 @@ async function drawHalaqaSheet(bg,h,rows,weekNo,size,DR){
 }
 
 /* صورة النتائج (صغار): مفروزة حسب المسار والمستوى ثم المضمار والمجموع، 25 طالبًا في الصورة */
-async function drawResultsSheet(bg,g,part,off,kind){
+async function drawResultsSheet(bg,g,part,off,kind,mlab){
   const nr=Math.max(1,Math.min(30,part.length)),{c,x,T}=nr>25?mkCanvas(bg,1132,1600,249+25*51.28,-(nr-25)*51.28):mkCanvas(bg,1132,1600,249+nr*51.28,(25-nr)*51.28);
   const big=kind==='big',p2=n=>String(n).padStart(2,'0');
   T(pObj(g.path).name,892,166,{a:'right',w:285,size:36,color:CBRN});
   T(g.level?lObj(g.level).name:'—',392,166,{a:'right',w:330,size:36,color:CBRN});
-  {const lb='نتائج شهر:';T(lb,196,125,{a:'right',w:130,size:26,color:CBRN});const lw=x.measureText(lb).width;x.direction='ltr';T(String(+S.mon.split('-')[1]),196-lw-8,125,{a:'right',w:36,size:26,color:CBRN});x.direction='rtl'}
+  {const lb='نتائج شهر:';T(lb,196,125,{a:'right',w:130,size:26,color:CBRN});const lw=x.measureText(lb).width;x.direction='ltr';T(mlab||String(+S.mon.split('-')[1]),196-lw-8,125,{a:'right',w:70,size:26,color:CBRN});x.direction='rtl'}
   const COL=big?{rank:52,total:132,track:220,exam:300,les:395,rev:511,hifz:643}:{rank:51.5,total:122,track:201.5,exam:269,int:343.5,les:422.5,rev:527.5,hifz:651};
   const W=big?{rank:46,total:100,track:60,exam:84,les:88,rev:124,hifz:116}:{rank:46,total:84,track:62,exam:60,int:68,les:76,rev:124,hifz:100};
   const src=bgCtx(bg),P=51.28,TOP=249;
@@ -856,18 +874,16 @@ function viewExport(){
   const XS=ui.exsc&&ui.exsc.length?ui.exsc:[ui.scope||'all'];
   const seg=`<div class="seg" role="group">${S.weeks.map((x,i)=>`<button data-act="scm" data-v="w:${x.id}" aria-pressed="${XS.includes('w:'+x.id)}"><small>الأسبوع</small><b>${i+1}</b></button>`).join('')}<button data-act="scm" data-v="all" aria-pressed="${XS.includes('all')}"><small>تراكمي</small><b>الكل</b></button></div>`;
   return `<div class="bar" style="justify-content:space-between;align-items:center"><h2 class="t">تصدير صور</h2><button class="btn" data-act="tab" data-k="home">رجوع</button></div>
-  <div class="card"><div class="pad">
-   <div class="seg wide" role="group">${btn('ext','hal',E.type==='hal','كشف علامات','بترتيب الطلاب في الحلقة')}${btn('ext','res',E.type==='res','نتائج الشهر','مفروزة حسب المسار والمستوى')}</div>
-   <div class="seg wide" role="group">${btn('exs','kids',E.size==='kids','صغار','مع التفاعل (الإضافات)')}${btn('exs','big',E.size==='big','كبار','بدون التفاعل ولا يُحسب في المجموع')}</div>
-   <div class="bar"><label>الشهر<select data-f="mon">${S.months.map(m=>`<option value="${m}"${m===S.mon?' selected':''}>${esc(mdisp(m))}</option>`).join('')}</select></label></div>
-   <div class="sub">جودة الصور (ثابتة داخل التطبيق ولا تتأثر بشاشة الجهاز)</div>
-   <div class="seg wide" role="group">${btn('exq2','3',(S.imgq||3)===3,'عالية HD','3× — أوضح (الافتراضي)')}${btn('exq2','2',S.imgq===2,'عادية','2× — ملفات أصغر')}</div>
-   ${E.type==='hal'?`<div class="sub">الفترة — يمكن تحديد أكثر من فترة (صورة لكل فترة)</div>${seg}`:''}
-   <div class="sub">الحلقات</div>
+  <div class="card xcard"><div class="pad">
+   <div class="seg cmp" role="group">${btn('ext','hal',E.type==='hal','كشف علامات','بترتيب الحلقة')}${btn('ext','res',E.type==='res','نتائج الشهر','حسب المسار والمستوى')}</div>
+   <div class="seg cmp" role="group">${btn('exs','kids',E.size==='kids','صغار','مع التفاعل')}${btn('exs','big',E.size==='big','كبار','بدون التفاعل')}</div>
+   ${E.type==='hal'?seg:''}
+   <div class="xsec">الحلقات</div>
    <div class="row" style="flex-wrap:wrap;gap:6px">${hs.map(id=>chip('exh',id,H.has(id),hName(id),cs().filter(s=>s.halaqa===id).length)).join('')||'<span class="sub">لا توجد حلقات فيها طلاب</span>'}</div>
-   ${E.type==='res'?`<div class="sub">المسارات</div><div class="row" style="flex-wrap:wrap;gap:6px">${ps.map(id=>chip('exq',id,Pp.has(id),pObj(id).name)).join('')}</div>`:''}
-   <div class="sub">${E.type==='hal'?'صورة مستقلة لكل حلقة':'صورة مستقلة لكل مسار ومستوى (30 طالباً في الصورة)'} — سيُنتج ${cnt} صورة</div>
-   <div class="row"><button class="btn pri" data-act="exgo"${cnt?'':' disabled'}>${ico('img',18)} تصدير الصور</button></div>
+   ${E.type==='res'?`<div class="xsec">المسارات</div><div class="row" style="flex-wrap:wrap;gap:6px">${ps.map(id=>chip('exq',id,Pp.has(id),pObj(id).name)).join('')}</div>`:''}
+   <div class="xbar"><div><div class="xcnt">${cnt} صورة</div><div class="xhint">${E.type==='hal'?'صورة مستقلة لكل حلقة':'لكل مسار ومستوى · 30 طالباً بالصورة'}</div></div>
+    <div class="xq"><span class="xhint">الجودة</span><div class="seg mini" role="group"><button data-act="exq2" data-v="3" aria-pressed="${(S.imgq||3)===3}" title="3× — أوضح">HD</button><button data-act="exq2" data-v="2" aria-pressed="${S.imgq===2}" title="2× — ملفات أصغر">عادية</button></div></div></div>
+   <button class="btn pri xgo" data-act="exgo"${cnt?'':' disabled'}>${ico('img',20)} تصدير الصور</button>
   </div></div>`;
 }
 function defDates(sc){
@@ -900,9 +916,21 @@ async function progSet(i,total,label){
   await new Promise(r=>setTimeout(r,15));
 }
 function progHide(){const d=document.getElementById('prog');if(d)d.remove()}
+function askMonth(){
+  return new Promise(res=>{
+    const def=(ui.rmon&&ui.rmon.k===S.mon)?ui.rmon.v:String(+S.mon.split('-')[1]);
+    const o=document.createElement('div');o.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+    o.innerHTML='<div class="card" style="max-width:380px;width:100%;direction:rtl"><div class="pad"><h2>شهر النتائج</h2><div class="sub">يُكتب في أعلى كل صورة نتائج بعد «نتائج شهر:»</div><input id="rmv" dir="ltr" inputmode="numeric" style="width:100%;text-align:center;margin-top:10px" value="'+esc(def)+'"><div class="row" style="margin-top:14px"><button class="btn pri" id="rmok">تصدير</button><button class="btn" id="rmno">إلغاء</button></div></div></div>';
+    document.body.appendChild(o);const inp=o.querySelector('#rmv');inp.focus();inp.select();
+    const done=v=>{o.remove();res(v)};
+    o.querySelector('#rmok').onclick=()=>{const v=inp.value.trim();ui.rmon={k:S.mon,v};done(v||def)};
+    o.querySelector('#rmno').onclick=()=>done(null);
+  });
+}
 async function exportSelected(){
-  const E=ui.ex;let DRM=null;
-  if(E){const scs0=E.type==='hal'?(ui.exsc&&ui.exsc.length?ui.exsc:[ui.scope||'all']):['res'];DRM=await askDates(scs0);if(!DRM)return}
+  const E=ui.ex;let DRM=null,MLAB=null;
+  if(E&&E.type==='hal'){DRM=await askDates(ui.exsc&&ui.exsc.length?ui.exsc:[ui.scope||'all']);if(!DRM)return}
+  if(E&&E.type!=='hal'){MLAB=await askMonth();if(MLAB===null)return}
   const H=new Set(E.hs),Pp=new Set(E.ps),mn=monthName(S.mon),td=today(),size=E.size;
   await ensureFonts();const out=[];
   try{
@@ -921,7 +949,7 @@ async function exportSelected(){
   const jobs=[];for(const g of gs){const parts=chunks(rankedK(g.items,ws,size),30);parts.forEach((p,b)=>jobs.push({g,p,b,np:parts.length}))}
   progShow('جارٍ تصدير النتائج',jobs.length);let n=0;
   for(const j of jobs){await progSet(n,jobs.length,j.g.label);
-    out.push({name:cleanName(`نتائج ${hn} ${j.g.label} ${mn} ${td}${j.np>1?' '+(j.b+1):''}.jpg`),blob:await drawResultsSheet(bg,j.g,j.p,j.b*30,size)});n++}
+    out.push({name:cleanName(`نتائج ${hn} ${j.g.label} ${mn} ${td}${j.np>1?' '+(j.b+1):''}.jpg`),blob:await drawResultsSheet(bg,j.g,j.p,j.b*30,size,MLAB)});n++}
   await progSet(n,jobs.length,'جارٍ الحفظ…');progHide();
   await saveOut(out,`نتائج ${hn} ${mn} ${td}.zip`);
   }finally{progHide()}
