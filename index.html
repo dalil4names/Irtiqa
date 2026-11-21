@@ -322,7 +322,7 @@ function weeksIn(scope){return scope==='all'?monthKeys():[ek(S.mon,scope.slice(2
 function agg(sid,ws){const r=Object.fromEntries(FIELDS.map(([k])=>[k,0]));ws.forEach(w=>{const e=ent(w,sid);FIELDS.forEach(([k])=>{if(k==='track')r[k]=Math.max(r[k],num(e[k]));else r[k]+=num(e[k])})});FIELDS.forEach(([k])=>{r[k]=rnd(r[k])});r.hifzP=rnd(r.hifz*100);r.revP=rnd(r.rev*30);r.total=rnd(r.hifzP+r.revP+r.les+r.int+r.exam*1000);return r}
 function scopeOptions(sel){return S.weeks.map(w=>`<option value="w:${w.id}"${sel==='w:'+w.id?' selected':''}>${esc(w.label)}</option>`).join('')+`<option value="all"${sel==='all'?' selected':''}>كل الأسابيع (تراكمي)</option>`}
 function scopeLabel(sc){if(sc==='all')return'كل الأسابيع';const w=S.weeks.find(x=>x.id===sc.slice(2));return w?w.label:''}
-function ranked(items,ws){return items.map(s=>({s,a:agg(s.id,ws)})).sort((x,y)=>y.a.track-x.a.track||y.a.total-x.a.total||x.s.name.localeCompare(y.s.name,'ar'))}
+function ranked(items,ws){return items.map(s=>({s,a:agg(s.id,ws)})).sort((x,y)=>y.a.exam-x.a.exam||y.a.total-x.a.total||x.s.name.localeCompare(y.s.name,'ar'))}
 
 /* ---------- views ---------- */
 const TABS=[['home','الرئيسية'],['halaqat','الحلقات'],['week','العلامات'],['results','النتائج'],['settings','الإعدادات']];
@@ -341,7 +341,7 @@ function filterBar(){
   return `<label>الحلقة<select data-f="fh"><option value="">كل الحلقات</option>${hOpts(ui.fh)}</select></label>
   <label>المسار والمستوى<select data-f="fg"><option value="">الكل</option>${gs.map(g=>`<option value="${g.key}"${ui.fg===g.key?' selected':''}>${esc(g.label)}</option>`).join('')}</select></label>`;
 }
-const APP_VER='57';
+const APP_VER='58';
 function viewHome(){
   const filled=S.weeks.filter(w=>Object.keys(S.entries[ek(S.mon,w.id)]||{}).length).length;
   const T=(act,k,ic,label,main)=>`<button class="tile${main?' main':''}" data-act="${act}"${k?` data-${act==='exo'?'v':'k'}="${k}"`:''}><span class="ic">${ico(ic,26)}</span><b>${label}</b></button>`;
@@ -713,7 +713,7 @@ async function saveOut(out,zipName){
 /* كشف الحلقة: ترتيب الطلاب كما في الحلقة بلا فرز، 22 طالبًا في الصورة */
 const SZ={row:31,name:31,path:27,sum:29,tot:33,foot:30,num:28};
 const adjA=(a,size)=>size==='big'?{...a,int:0,total:a.total-num(a.int)}:a;
-const rankedK=(items,ws,size)=>ranked(items,ws).map(r=>({s:r.s,a:adjA(r.a,size)})).sort((x,y)=>y.a.track-x.a.track||y.a.total-x.a.total||x.s.name.localeCompare(y.s.name,'ar'));
+const rankedK=(items,ws,size)=>ranked(items,ws).map(r=>({s:r.s,a:adjA(r.a,size)})).sort((x,y)=>y.a.exam-x.a.exam||y.a.total-x.a.total||x.s.name.localeCompare(y.s.name,'ar'));
 const LAY={kids:{path:1086.5,hifz:996,hifzP:884,rev:767,revP:651,les:547.5,int:441,exam:343.5,track:258,total:115.5},big:{path:1074.5,hifz:972,hifzP:860,rev:743.5,revP:627,les:509.5,exam:386.5,track:273,total:114}};
 const LWD={kids:{path:56,hifz:104,hifzP:86,rev:116,revP:86,les:92,int:92,exam:76,track:66,total:180},big:{path:70,hifz:106,hifzP:86,rev:118,revP:86,les:120,exam:98,track:98,total:180}};
 async function drawHalaqaSheet(bg,h,rows,weekNo,size,DR){
