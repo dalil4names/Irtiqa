@@ -172,6 +172,7 @@ textarea{width:100%;min-height:110px}
 .tiles .tile .ic{width:44px;height:44px;border-radius:15px}
 .tiles .tile .ic svg{width:24px;height:24px}
 .tiles .tile b{font-size:14px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;line-height:1.25}
+.pmini{margin-top:4px;font-size:12.5px;padding:3px 6px;border-radius:10px;max-width:100%}
 .vers{text-align:center;font-size:12.5px;color:var(--muted,#7a8699);margin:14px 0 8px;letter-spacing:.3px}
 .home-stats .stat{padding:10px 6px}
 .home-stats .stat b{font-size:22px}
@@ -241,6 +242,8 @@ if(!S||!S.halaqat)S=demo();
 function fixWeeks(){
   if(S.paths&&!S.paths.some(p=>p.code==='ك'||p.name==='كبار'))S.paths.push({code:'ك',name:'كبار'});
   if(S.paths)S.paths.forEach(p=>{if(p.code==='م'&&p.name==='مهرة')p.name='مبدعين'});
+  if(S.paths&&!S.paths.some(p=>p.code==='ش'))S.paths.push({code:'ش',name:'شموخ'});
+  if(S.paths)S.paths.forEach(p=>{if((p.code==='ه'||p.name==='مهرة')&&p.nolevel===undefined)p.nolevel=true});
   if(S.paths&&!S.paths.some(p=>p.code==='م'||p.name==='مبدعين'))S.paths.push({code:'م',name:'مبدعين'});
   const old=S.weeks||[];
   S.weeks=[0,1,2,3,4].map(i=>({id:old[i]?old[i].id:'w'+(i+1),label:'الأسبوع '+(i+1)}));
@@ -255,15 +258,16 @@ function fixWeeks(){
   if(!S.weeks.find(w=>w.id===S.cur))S.cur=S.weeks[0].id;
 }
 fixWeeks();S.tab='home';
-let saveT;function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}},250)}
+let saveT;function save(){(S.students||[]).forEach(s=>{if(noLvl(s.path)&&s.level)s.level='';(s.hist||[]).forEach(h=>{if(noLvl(h.p)&&h.l)h.l=''})});clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}},250)}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>t.hidden=true,3200)}
 
 /* ---------- helpers ---------- */
 const hName=id=>(S.halaqat.find(h=>h.id===id)||{}).name||'—';
 const pObj=c=>S.paths.find(p=>p.code===c)||{code:c,name:c};
 const lObj=c=>S.levels.find(l=>l.code===c)||{code:c,name:c};
-const gKey=s=>s.path+'.'+s.level;
-const gLabel=s=>pObj(s.path).name+' '+lObj(s.level).name;
+function noLvl(c){const p=(S.paths||[]).find(x=>x.code===c);return !!(p&&p.nolevel)}
+const gKey=s=>s.level?s.path+'.'+s.level:s.path;
+const gLabel=s=>s.level?pObj(s.path).name+' '+lObj(s.level).name:pObj(s.path).name;
 function groups(list){
   const m=new Map();list.forEach(s=>{const k=gKey(s);if(!m.has(k))m.set(k,{key:k,path:s.path,level:s.level,label:gLabel(s),items:[]});m.get(k).items.push(s)});
   const po=c=>S.paths.findIndex(p=>p.code===c),lo=c=>S.levels.findIndex(l=>l.code===c);
@@ -276,7 +280,13 @@ const lOpts=sel=>opts(S.levels,sel,l=>l.code,l=>l.name);
 const ent=(w,sid)=>((S.entries[w]||{})[sid])||{};
 const ek=(mon,wid)=>mon+':'+wid;
 const act=(s,m)=>(!s.since||m>=s.since)&&(!s.gone||m<s.gone);
-const cs=()=>S.students.filter(s=>act(s,S.mon));
+function effPL(s,m){let p=s.path,l=s.level;(s.hist||[]).filter(h=>h.from<=m).sort((a,b)=>a.from<b.from?-1:1).forEach(h=>{p=h.p;l=h.l});
+  if(noLvl(p))l='';else if(!l)l=(S.levels[0]||{}).code||'';return{p,l}}
+function setPL(s,p,l){if(noLvl(p))l='';else if(!l)l=(S.levels[0]||{}).code||'';
+  const first=s.since||[...(S.months||[])].sort()[0]||S.mon;
+  if(S.mon<=first){s.path=p;s.level=l;s.hist=(s.hist||[]).filter(h=>h.from>S.mon)}
+  else{s.hist=(s.hist||[]).filter(h=>h.from!==S.mon);s.hist.push({from:S.mon,p,l});s.hist.sort((a,b)=>a.from<b.from?-1:1)}}
+const cs=()=>S.students.filter(s=>act(s,S.mon)).map(s=>{const e=effPL(s,S.mon);return e.p===s.path&&e.l===s.level?s:{...s,path:e.p,level:e.l}});
 const monthKeys=()=>S.weeks.map(w=>ek(S.mon,w.id));
 function monthName(m){const [y,mo]=m.split('-');return (+mo)+' / '+y}
 const mdisp=m=>'\u2066'+monthName(m)+'\u2069';
@@ -288,7 +298,7 @@ function monthBar(){
     :`<button class="btn" data-act="newmon">${ico('plus',16)} شهر جديد</button>`)+
    `<span class="sub" style="flex:1 1 180px">كل شهر له علامات مستقلة. عند بدء شهر جديد تبدأ العلامات من الصفر وتبقى بيانات الأشهر السابقة محفوظة.</span></div>`;
 }
-const combos=()=>S.paths.flatMap(p=>S.levels.map(l=>({c:p.code+'.'+l.code,p:p.code,l:l.code,label:p.code+'.'+l.code+' – '+p.name+' '+l.name})));
+const combos=()=>S.paths.flatMap(p=>p.nolevel?[{c:p.code,p:p.code,l:'',label:p.code+' – '+p.name}]:S.levels.map(l=>({c:p.code+'.'+l.code,p:p.code,l:l.code,label:p.code+'.'+l.code+' – '+p.name+' '+l.name})));
 const cOpts=sel=>combos().map(x=>`<option value="${esc(x.c)}"${x.c===sel?' selected':''}>${esc(x.label)}</option>`).join('');
 function weeksIn(scope){return scope==='all'?monthKeys():[ek(S.mon,scope.slice(2))]}
 function agg(sid,ws){const r=Object.fromEntries(FIELDS.map(([k])=>[k,0]));ws.forEach(w=>{const e=ent(w,sid);FIELDS.forEach(([k])=>r[k]+=num(e[k]))});FIELDS.forEach(([k])=>{r[k]=rnd(r[k])});r.hifzP=rnd(r.hifz*100);r.revP=rnd(r.rev*30);r.total=rnd(r.hifzP+r.revP+r.les+r.int+r.exam*1000);return r}
@@ -313,7 +323,7 @@ function filterBar(){
   return `<label>الحلقة<select data-f="fh"><option value="">كل الحلقات</option>${hOpts(ui.fh)}</select></label>
   <label>المسار والمستوى<select data-f="fg"><option value="">الكل</option>${gs.map(g=>`<option value="${g.key}"${ui.fg===g.key?' selected':''}>${esc(g.label)}</option>`).join('')}</select></label>`;
 }
-const APP_VER='48';
+const APP_VER='51';
 function viewHome(){
   const filled=S.weeks.filter(w=>Object.keys(S.entries[ek(S.mon,w.id)]||{}).length).length;
   const T=(act,k,ic,label,main)=>`<button class="tile${main?' main':''}" data-act="${act}"${k?` data-${act==='exo'?'v':'k'}="${k}"`:''}><span class="ic">${ico(ic,26)}</span><b>${label}</b></button>`;
@@ -346,7 +356,7 @@ function viewHalaqa(h){
   const st=cs().filter(s=>s.halaqa===h.id);if(ui.scope!=='all'&&!S.weeks.find(w=>'w:'+w.id===ui.scope))ui.scope='all';const all=weeksIn(ui.scope);const ed=!!ui.edit;
   ui.add.h=h.id;if(!ui.add.p)ui.add.p=S.paths[0]?.code||'';if(!ui.add.l)ui.add.l=S.levels[0]?.code||'';
   const body=st.map(s=>{const a=agg(s.id,all);return `<tr><td class="name">${ed?`<input class="nm" data-st="${s.id}" data-k="name" value="${esc(s.name)}">`:esc(s.name)}</td>`+
-      (ed?`<td><select data-st="${s.id}" data-k="path">${pOpts(s.path)}</select></td><td><select data-st="${s.id}" data-k="level">${lOpts(s.level)}</select></td><td><button class="btn sm del" data-act="delst" data-id="${s.id}">${ui.confirm==='st'+s.id?'تأكيد؟':'حذف'}</button></td>`
+      (ed?`<td><select data-st="${s.id}" data-k="path">${pOpts(s.path)}</select></td><td>${noLvl(s.path)?'<span class="sub">—</span>':`<select data-st="${s.id}" data-k="level">${lOpts(s.level)}</select>`}</td><td><button class="btn sm del" data-act="delst" data-id="${s.id}">${ui.confirm==='st'+s.id?'تأكيد؟':'حذف'}</button></td>`
           :`<td><span class="chip l-${esc(s.level)}">${esc(gKey(s))}</span></td>`)+
       FIELDS.map(([k])=>`<td${CALC.includes(k)?' class="calc"':''}>${a[k]}</td>`).join('')+`<td class="tot">${a.total}</td></tr>`}).join('');
   const bulkUi=ui.bulk?`<span class="sub">راجع الأسماء، وحدّد لكل اسم مساره ومستواه (مثل أ.ذ):</span>
@@ -357,7 +367,7 @@ function viewHalaqa(h){
   const add=`<div class="card"><details${ui.hadd||ui.bulk||!st.length?' open':''}><summary style="padding:13px 16px">إضافة طلاب إلى هذه الحلقة</summary><div class="pad">
     <div class="bar"><label style="flex:2 1 200px">الاسم<input id="addName" placeholder="اسم الطالب"></label>
     <label>المسار<select data-add="p">${pOpts(ui.add.p)}</select></label>
-    <label>المستوى<select data-add="l">${lOpts(ui.add.l)}</select></label>
+    <label id="addLvl" style="${noLvl(ui.add.p)?'display:none':''}">المستوى<select data-add="l">${lOpts(ui.add.l)}</select></label>
     <button class="btn pri" data-act="addst">إضافة</button></div>
     ${bulkUi}</div></details></div>`;
   return `<div class="bar" style="justify-content:space-between;align-items:center"><div class="row"><button class="btn sm" data-act="backh">${ico('back',16)} الحلقات</button><h2 class="t">${esc(h.name)}</h2></div>
@@ -436,7 +446,7 @@ function viewWeek(){
   if(!cs().length)return head+`<div class="card empty">لا يوجد طلاب بعد. أضفهم من «إضافة طلاب» ثم عد لتسجيل العلامات.</div>`;
   const list=filtered();const key=ek(S.mon,w.id);
   const ths=FIELDS.map(([k,l])=>`<th>${l}${CALC.includes(k)?' ●':''}</th>`).join('');
-  const body=list.map(s=>{const e=ent(key,s.id);return `<tr><td class="name">${esc(s.name)}<div class="sub">${esc(hName(s.halaqa))} · ${esc(gKey(s))}</div></td>`+
+  const body=list.map(s=>{const e=ent(key,s.id);return `<tr><td class="name">${esc(s.name)}<div class="sub">${esc(hName(s.halaqa))}</div><select class="pmini" data-cmb="${s.id}" aria-label="المسار والمستوى">${cOpts(gKey(s))}</select></td>`+
       FIELDS.map(([k])=>CALC.includes(k)?`<td class="calc" id="${k}-${s.id}">${num(e[k==='hifzP'?'hifz':'rev'])*(k==='hifzP'?100:30)}</td>`:`<td><input class="n" inputmode="decimal" data-sid="${s.id}" data-k="${k}" value="${esc(e[k]??'')}" aria-label="${esc(s.name)}"></td>`).join('')+
       `<td class="tot" id="t-${s.id}">${total(e)}</td></tr>`}).join('');
   return head+`<div class="card"><h2>العلامات <span class="sub">الأسبوع ${S.weeks.indexOf(w)+1} · ${esc(mdisp(S.mon))}</span></h2><div class="scroll"><table><thead><tr><th class="name">الاسم</th>${ths}<th>المجموع ●</th></tr></thead><tbody>${body}</tbody></table></div>${list.length?'':'<div class="empty">لا يوجد طلاب بهذا الفلتر</div>'}</div>
@@ -474,7 +484,7 @@ function summaryBox(ws){
 function viewSettings(){
   return `<div class="grid">
   <div class="card"><h2>الحلقات <button class="btn sm" data-act="tab" data-k="addh">إضافة حلقة</button></h2><div class="pad">${S.halaqat.map(h=>`<div class="pad" style="padding:0 0 10px;border-bottom:1px solid var(--line)"><input data-hl="${h.id}" data-hk="name" value="${esc(h.name)}" aria-label="اسم الحلقة"><input data-hl="${h.id}" data-hk="teacher" value="${esc(h.teacher||'')}" placeholder="معلم الحلقة (مطلوب)" aria-label="المعلم"><input data-hl="${h.id}" data-hk="supervisor" value="${esc(h.supervisor||'')}" placeholder="اسم المشرف (مطلوب)" aria-label="المشرف"><div><button class="btn sm del" data-act="delh" data-id="${h.id}">حذف الحلقة</button></div></div>`).join('')||'<div class="empty">لا توجد حلقات</div>'}</div></div>
-  <div class="card"><h2>المسارات</h2><div class="pad">${S.paths.map(p=>`<div class="row"><input style="flex:0 0 52px;text-align:center" data-pc="${esc(p.code)}" data-pk="code" value="${esc(p.code)}" aria-label="رمز"><input data-pc="${esc(p.code)}" data-pk="name" value="${esc(p.name)}"></div>`).join('')}
+  <div class="card"><h2>المسارات</h2><div class="pad">${S.paths.map(p=>`<div class="row"><input style="flex:0 0 52px;text-align:center" data-pc="${esc(p.code)}" data-pk="code" value="${esc(p.code)}" aria-label="رمز"><input data-pc="${esc(p.code)}" data-pk="name" value="${esc(p.name)}"><label class="sub" style="white-space:nowrap;display:flex;align-items:center;gap:4px"><input type="checkbox" data-pnl="${esc(p.code)}"${p.nolevel?' checked':''}> بدون مستوى</label></div>`).join('')}
     <div class="row"><input id="newPc" style="flex:0 0 52px;text-align:center" placeholder="رمز"><input id="newPn" placeholder="اسم مسار جديد"><button class="btn sm" data-act="addp">إضافة</button></div></div></div>
   <div class="card"><h2>المستويات</h2><div class="pad">${S.levels.map(l=>`<div class="row"><span class="chip l-${esc(l.code)}" style="min-width:34px;text-align:center">${esc(l.code)}</span><input data-lv="${esc(l.code)}" value="${esc(l.name)}"></div>`).join('')}</div></div>
   <div class="card"><h2>عنوان التقرير</h2><div class="pad"><input id="title" value="${esc(S.title)}"><span class="sub">يظهر في ورقة «التقارير» داخل ملف Excel.</span></div></div>
@@ -521,8 +531,8 @@ document.addEventListener('click',async ev=>{
   if(a==='bulkprep'){const raw=document.getElementById('bulk').value.split('\n').map(x=>x.trim()).filter(Boolean);
     if(!S.halaqat.length){toast('أضف حلقة أولًا');go('addh');return}
     if(!raw.length){toast('اكتب الأسماء أولًا');return}
-    const valid=new Set(combos().map(x=>x.c)),def=ui.add.p+'.'+ui.add.l;
-    ui.bulk=raw.map(line=>{const m=line.match(/^(.*\S)[\s\-–:،,]+(\S+\.\S+)$/);return m&&valid.has(m[2])?{n:m[1].trim(),c:m[2]}:{n:line,c:def}});ui.hadd=true;render();return}
+    const valid=new Set(combos().map(x=>x.c)),def=noLvl(ui.add.p)?ui.add.p:ui.add.p+'.'+ui.add.l;
+    ui.bulk=raw.map(line=>{const m=line.match(/^(.*\S)[\s\-–:،,]+(\S+)$/);return m&&valid.has(m[2])?{n:m[1].trim(),c:m[2]}:{n:line,c:def}});ui.hadd=true;render();return}
   if(a==='bulkcancel'){ui.bulk=null;render();return}
   if(a==='brm'){ui.bulk.splice(+b.dataset.i,1);if(!ui.bulk.length)ui.bulk=null;render();return}
   if(a==='bulkadd'){const map=Object.fromEntries(combos().map(x=>[x.c,x]));let n=0;
@@ -550,7 +560,7 @@ document.addEventListener('click',async ev=>{
   if(a==='delh'){if(S.students.some(s=>s.halaqa===b.dataset.id)){toast('لا يمكن حذف حلقة فيها طلاب');return}S.halaqat=S.halaqat.filter(h=>h.id!==b.dataset.id);save();render();return}
   if(a==='addp'){const c=document.getElementById('newPc').value.trim(),n=document.getElementById('newPn').value.trim();if(!c||!n){toast('اكتب الرمز والاسم');return}
     if(S.paths.some(p=>p.code===c)){toast('الرمز مستخدم');return}S.paths.push({code:c,name:n});save();render();return}
-  if(a==='delp'){if(S.students.some(s=>s.path===b.dataset.id)){toast('لا يمكن حذف مسار فيه طلاب');return}S.paths=S.paths.filter(p=>p.code!==b.dataset.id);save();render();return}
+  if(a==='delp'){if(S.students.some(s=>s.path===b.dataset.id||(s.hist||[]).some(h=>h.p===b.dataset.id))){toast('لا يمكن حذف مسار فيه طلاب');return}S.paths=S.paths.filter(p=>p.code!==b.dataset.id);save();render();return}
   if(a==='backup'){const d=await getDl();if(!d){toast('الحفظ غير متاح هنا');return}
     try{await d.save({filename:'نسخة-الحلقات-'+today()+'.json',data:JSON.stringify(S)});toast('تم حفظ النسخة')}catch(e){if(e&&e.code!=='declined')toast('تعذّر الحفظ')}return}
   if(a==='restore'){document.getElementById('restoreFile').click();return}
@@ -576,11 +586,13 @@ document.addEventListener('change',async ev=>{
   if(t.id==='impFile'){const f=t.files[0];t.value='';importXlsx(f);return}
   if(t.dataset.f==='mon'){S.mon=t.value;save();render();return}
   if(t.dataset.f){ui[t.dataset.f]=t.value;if(S.tab!=='addh')render();return}
-  if(t.dataset.add){ui.add[t.dataset.add]=t.value;return}
-  if(t.dataset.st){const s=S.students.find(x=>x.id===t.dataset.st);if(s){const v=t.value.trim();if(t.dataset.k==='name'&&!v){t.value=s.name;return}s[t.dataset.k]=t.dataset.k==='name'?v:t.value;save();if(t.dataset.k!=='name')render()}return}
+  if(t.dataset.pnl!==undefined&&t.type==='checkbox'){const p=S.paths.find(x=>x.code===t.dataset.pnl);if(p){p.nolevel=t.checked;if(!t.checked)S.students.forEach(x=>{if(x.path===p.code&&!x.level)x.level=(S.levels[0]||{}).code||''});save();render()}return}
+  if(t.dataset.cmb){const s0=S.students.find(x=>x.id===t.dataset.cmb),c=combos().find(x=>x.c===t.value);if(s0&&c){setPL(s0,c.p,c.l);save();render();toast('عُدّل المسار لهذا الشهر وما بعده: '+c.c)}return}
+  if(t.dataset.add){ui.add[t.dataset.add]=t.value;if(t.dataset.add==='p'){const e=document.getElementById('addLvl');if(e)e.style.display=noLvl(t.value)?'none':''}return}
+  if(t.dataset.st){const s=S.students.find(x=>x.id===t.dataset.st);if(s){const v=t.value.trim();if(t.dataset.k==='name'&&!v){t.value=s.name;return}if(t.dataset.k==='name')s.name=v;else{const e=effPL(s,S.mon);setPL(s,t.dataset.k==='path'?t.value:e.p,t.dataset.k==='level'?t.value:e.l)}save();if(t.dataset.k!=='name')render()}return}
   if(t.dataset.pc&&t.dataset.pk==='code'){const p=S.paths.find(x=>x.code===t.dataset.pc);const nc=t.value.trim();
     if(!nc||S.paths.some(x=>x.code===nc)){toast('الرمز فارغ أو مستخدم');render();return}
-    S.students.forEach(s=>{if(s.path===p.code)s.path=nc});p.code=nc;save();render();return}
+    S.students.forEach(s=>{if(s.path===p.code)s.path=nc;(s.hist||[]).forEach(h=>{if(h.p===p.code)h.p=nc})});p.code=nc;save();render();return}
   if(t.id==='restoreFile'){const f=t.files[0];if(!f)return;try{const j=JSON.parse(await f.text());if(!j.halaqat||!j.students)throw 0;S=j;S.demo=false;fixWeeks();S.tab='home';save();render();toast('تم استرجاع النسخة')}catch(e){toast('الملف غير صالح')}}
 });
 
@@ -727,7 +739,7 @@ async function drawResultsSheet(bg,g,part,off,kind){
   const nr=Math.max(1,Math.min(30,part.length)),{c,x,T}=nr>25?mkCanvas(bg,1132,1600,249+25*51.28,-(nr-25)*51.28):mkCanvas(bg,1132,1600,249+nr*51.28,(25-nr)*51.28);
   const big=kind==='big',p2=n=>String(n).padStart(2,'0');
   T(pObj(g.path).name,892,166,{a:'right',w:285,size:36,color:CBRN});
-  T(lObj(g.level).name,392,166,{a:'right',w:330,size:36,color:CBRN});
+  T(g.level?lObj(g.level).name:'—',392,166,{a:'right',w:330,size:36,color:CBRN});
   {const lb='نتائج شهر:';T(lb,196,125,{a:'right',w:130,size:26,color:CBRN});const lw=x.measureText(lb).width;x.direction='ltr';T(String(+S.mon.split('-')[1]),196-lw-8,125,{a:'right',w:36,size:26,color:CBRN});x.direction='rtl'}
   const COL=big?{rank:52,total:132,track:220,exam:300,les:395,rev:511,hifz:643}:{rank:51.5,total:122,track:201.5,exam:269,int:343.5,les:422.5,rev:527.5,hifz:651};
   const W=big?{rank:46,total:100,track:60,exam:84,les:88,rev:124,hifz:116}:{rank:46,total:84,track:62,exam:60,int:68,les:76,rev:124,hifz:100};
@@ -766,7 +778,7 @@ function weekFromText(t){
 /* يقرأ كل الجداول: ورقة لكل أسبوع، أو عدة جداول فوق بعض في ورقة واحدة (الأسبوع 1 ثم 2 …) */
 function importWorkbook(wb,hid,dp,dl,opt){
   opt=opt||{};const dryNames=new Set();
-  let added=0,marks=0;const weeks=new Set();
+  let added=0,marks=0,moved=0;const weeks=new Set();
   const pFind=t=>{t=nname(t);return (S.paths.find(p=>nname(p.name)===t||p.code===t)||{}).code};
   const lFind=t=>{t=nname(t);return (S.levels.find(p=>nname(p.name)===t||p.code===t)||{}).code};
   let seq=0;
@@ -775,8 +787,11 @@ function importWorkbook(wb,hid,dp,dl,opt){
     else if(/تفاعل|اضاف/.test(n))m.int=c;else if(/اختبار|اجتياز/.test(n))m.exam=c;else if(/مضمار/.test(n))m.track=c;else if(/^(ال)?مسار/.test(n))m.path=c;else if(/^(ال)?مستوي/.test(n))m.level=c});
     return m.name!==undefined&&(m.hifz!==undefined||m.rev!==undefined)?m:null};
   let miss=0;
-  const combo=t=>{t=String(t||'').trim();if(!t)return null;const m=t.match(/^(\S{1,3})\.(\S{1,3})$/);
-    if(m&&S.paths.some(x=>x.code===m[1])&&S.levels.some(x=>x.code===m[2]))return{p:m[1],l:m[2]};
+  const combo=t=>{t=String(t||'').replace(/[\u200e\u200f\u202a-\u202e\u061c]/g,'').trim();if(!t)return null;const m=t.match(/^([^\s.\-\/_،·]{1,3})\s*[.\-\/_،·]\s*([^\s.\-\/_،·]{1,3})$/);
+    const hp=c=>S.paths.some(x=>x.code===c),hl=c=>S.levels.some(x=>x.code===c);
+    if(m&&hp(m[1])&&hl(m[2]))return{p:m[1],l:m[2]};
+    if(m&&hl(m[1])&&hp(m[2]))return{p:m[2],l:m[1]};
+    if(hp(t)&&noLvl(t))return{p:t,l:''};
     const w=t.split(/\s+/);if(w.length===2){const a=pFind(w[0]),b=lFind(w[1]);if(a&&b)return{p:a,l:b}}return null};
   const resolve=(pcell,lcell)=>{let p,l;const cb=combo(pcell)||combo(lcell);if(cb){p=cb.p;l=cb.l}else{p=pFind(pcell||'');l=lFind(lcell||'')}return{p,l}};
   const put=(wi,name,v,pcell,lcell)=>{
@@ -788,7 +803,8 @@ function importWorkbook(wb,hid,dp,dl,opt){
     if(!name||/^(المجموع|مجموع)/.test(nname(name))||!Object.keys(v).length)return;
     if(opt.dry){dryNames.add(nname(name));marks++;return}
     let st=cs().find(s=>s.halaqa===hid&&nname(s.name)===nname(name));
-    if(!st){if(!pc||!lc){miss++;pc=pc||dp;lc=lc||dl}st={id:uid(),name,halaqa:hid,path:pc,level:lc,since:S.mon};S.students.push(st);added++}
+    if(st&&pc&&(lc||noLvl(pc))&&(st.path!==pc||(st.level||'')!==(noLvl(pc)?'':lc))){const rs0=S.students.find(x=>x.id===st.id);if(rs0){setPL(rs0,pc,lc);moved++}}
+    if(!st){if(!pc||(!lc&&!noLvl(pc))){miss++;pc=pc||dp;lc=lc||dl}st={id:uid(),name,halaqa:hid,path:pc,level:lc,since:S.mon};S.students.push(st);added++}
     const K=ek(S.mon,S.weeks[wi].id),e=(S.entries[K]||(S.entries[K]={}));e[st.id]={...(e[st.id]||{}),...v};marks++;weeks.add(wi);
   };
   (opt.sheets||wb.worksheets).forEach((ws,idx)=>{
@@ -818,14 +834,15 @@ function importWorkbook(wb,hid,dp,dl,opt){
         put(wi,tk.join(' '),v,'','')});
     }
   });
-  return{added,marks,weeks:weeks.size,miss,names:dryNames.size};
+  if(moved)save();
+  return{added,marks,weeks:weeks.size,miss,moved,names:dryNames.size};
 }
 async function importXlsx(f){
   if(!f)return;if(!S.halaqat.length){toast('أضف حلقة أولاً');return}
   const wb=await readWb(f);if(!wb)return;
   const r=importWorkbook(wb,ui.ih||S.halaqat[0].id,ui.ip||(S.paths[0]||{}).code,ui.il||(S.levels[0]||{}).code);
   save();render();
-  toast(r.marks?`تم تسجيل علامات ${r.marks} سطر في ${r.weeks} أسبوع`+(r.added?` · أُضيف ${r.added} طالب جديد`:'')+(r.miss?` · ${r.miss} بلا مسار/مستوى في الملف أُعطوا الأول افتراضياً`:''):'لم أجد علامات في الملف؛ تأكد من صف العناوين (الاسم، الحفظ، المراجعة…)');
+  toast(r.marks?`تم تسجيل علامات ${r.marks} سطر في ${r.weeks} أسبوع`+(r.added?` · أُضيف ${r.added} طالب جديد`:'')+(r.moved?` · عُدّل مسار/مستوى ${r.moved} طالب`:'')+(r.miss?` · ${r.miss} بلا مسار/مستوى في الملف أُعطوا الأول افتراضياً`:''):'لم أجد علامات في الملف؛ تأكد من صف العناوين (الاسم، الحفظ، المراجعة…)');
 }
 /* ---------- نافذة التصدير ---------- */
 function exOpen(type){ui.ex={type,size:(ui.ex&&ui.ex.size)||'kids',hs:[...new Set(cs().map(s=>s.halaqa))],ps:[...new Set(cs().map(s=>s.path))]};S.tab='exp';render();window.scrollTo(0,0)}
