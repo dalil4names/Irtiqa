@@ -1,4 +1,4 @@
-const V='irtiqa-v77';
+const V='irtiqa-v78';
 const SHELL=['./','index.html','manifest.webmanifest','favicon.png','icon-192.png','icon-512.png'];
 const EXT=['https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js','https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js','https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap'];
 /* لا تحديث تلقائي: النسخة الجديدة تنتظر حتى يضغط المستخدم زر التحديث */
